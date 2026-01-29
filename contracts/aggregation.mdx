@@ -1,0 +1,143 @@
+---
+title: 'Aggregation Methods'
+description: 'Learn about all available aggregation methods for parsing CSV and JSON files'
+---
+
+## Overview
+
+When parsing CSV/JSON files with custom column mapping, you can use these aggregation methods to compute metrics from raw data.
+
+## Available Methods
+
+| Method | Description |
+|--------|-------------|
+| `avg` | Average of all values (default) |
+| `sum` | Sum of all values |
+| `min` | Minimum value |
+| `max` | Maximum value |
+| `count` | Count of non-null values |
+| `p50` | 50th percentile (median) |
+| `p90` | 90th percentile |
+| `p95` | 95th percentile |
+| `p99` | 99th percentile |
+| `pass_rate` | Percentage of "success"/"pass"/true/1 values |
+| `fail_rate` | Percentage of "error"/"fail"/false/0 values |
+| `first` | First value |
+| `last` | Last value |
+
+## Usage Examples
+
+### Average (Default)
+
+```yaml
+sources:
+  csv:
+    metrics:
+      - column: accuracy
+        aggregate: avg
+```
+
+### Percentiles
+
+Use percentiles for latency and performance metrics:
+
+```yaml
+sources:
+  csv:
+    metrics:
+      - column: latency_ms
+        aggregate: p95
+        as: latency_p95
+      - column: response_time
+        aggregate: p99
+        as: response_time_p99
+```
+
+### Pass/Fail Rates
+
+For boolean or status columns:
+
+```yaml
+sources:
+  csv:
+    metrics:
+      - column: status
+        aggregate: pass_rate
+        as: success_rate
+      - column: error_flag
+        aggregate: fail_rate
+        as: error_rate
+```
+
+### Min/Max
+
+Find extreme values:
+
+```yaml
+sources:
+  csv:
+    metrics:
+      - column: cost_per_request
+        aggregate: min
+        as: min_cost
+      - column: cost_per_request
+        aggregate: max
+        as: max_cost
+```
+
+## Renaming Metrics
+
+Use the `as` field to rename aggregated metrics:
+
+```yaml
+sources:
+  csv:
+    metrics:
+      - column: latency
+        aggregate: p95
+        as: latency_p95_ms  # Renamed metric
+      - column: accuracy_score
+        aggregate: avg
+        as: mean_accuracy   # Renamed metric
+```
+
+## Common Patterns
+
+### Performance Metrics
+
+```yaml
+metrics:
+  - column: latency_ms
+    aggregate: p95
+    as: latency_p95
+  - column: throughput
+    aggregate: avg
+  - column: error_count
+    aggregate: sum
+```
+
+### Quality Metrics
+
+```yaml
+metrics:
+  - column: accuracy
+    aggregate: avg
+  - column: quality_score
+    aggregate: min  # Ensure minimum quality
+  - column: passed
+    aggregate: pass_rate
+    as: pass_rate
+```
+
+### Cost Metrics
+
+```yaml
+metrics:
+  - column: cost_per_request
+    aggregate: avg
+  - column: total_cost
+    aggregate: sum
+  - column: cost_per_request
+    aggregate: max
+    as: max_cost_per_request
+```

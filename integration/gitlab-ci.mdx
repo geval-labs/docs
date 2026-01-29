@@ -1,0 +1,154 @@
+---
+title: 'GitLab CI'
+description: 'Integrate Geval into your GitLab CI pipeline'
+---
+
+## Overview
+
+GitLab CI provides powerful CI/CD capabilities. Geval integrates seamlessly to enforce quality gates in merge requests.
+
+## Basic Setup
+
+```yaml
+# .gitlab-ci.yml
+eval-check:
+  stage: test
+  image: node:18
+  script:
+    - npm install -g @geval-labs/cli
+    - npm run evals
+    - geval check --contract contract.yaml --eval eval-results.csv
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - prompts/**
+        - agents/**
+```
+
+## Advanced Configuration
+
+### With Baseline Comparison
+
+```yaml
+eval-check:
+  stage: test
+  image: node:20
+  before_script:
+    - npm install -g @geval-labs/cli
+  script:
+    - npm run evals -- --output eval-results.json
+    - geval validate contract.yaml
+    - |
+      geval check \
+        --contract contract.yaml \
+        --eval eval-results.json \
+        --baseline baseline.json \
+        --json > decision.json
+  artifacts:
+    reports:
+      junit: decision.json
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+```
+
+### Multiple Stages
+
+```yaml
+stages:
+  - validate
+  - eval
+  - check
+
+validate-contract:
+  stage: validate
+  image: node:20
+  script:
+    - npm install -g @geval-labs/cli
+    - geval validate contract.yaml
+
+run-evals:
+  stage: eval
+  image: node:20
+  script:
+    - npm run evals
+  artifacts:
+    paths:
+      - eval-results.json
+    expire_in: 1 week
+
+check-evals:
+  stage: check
+  image: node:20
+  script:
+    - npm install -g @geval-labs/cli
+    - geval check --contract contract.yaml --eval eval-results.json
+  dependencies:
+    - run-evals
+```
+
+## Merge Request Integration
+
+### Required Pipeline
+
+To require the eval check to pass before merging:
+
+1. Go to **Settings** → **Merge Requests**
+2. Under **Merge checks**, enable **Pipelines must succeed**
+3. Or use branch protection rules
+
+### Merge Request Comments
+
+```yaml
+eval-check:
+  stage: test
+  image: node:20
+  script:
+    - npm install -g @geval-labs/cli
+    - npm run evals
+    - |
+      geval check \
+        --contract contract.yaml \
+        --eval eval-results.json \
+        --json > decision.json || true
+    - |
+      if [ -f decision.json ]; then
+        DECISION=$(cat decision.json)
+        curl --request POST \
+          --header "PRIVATE-TOKEN: $CI_JOB_TOKEN" \
+          --data "body=Geval Result: $DECISION" \
+          "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes"
+      fi
+```
+
+## Caching
+
+```yaml
+cache:
+  paths:
+    - node_modules/
+    - .npm/
+
+before_script:
+  - npm ci --cache .npm --prefer-offline
+```
+
+## Parallel Jobs
+
+```yaml
+eval-check:
+  parallel:
+    matrix:
+      - EVAL_TYPE: [performance, safety, quality]
+  script:
+    - npm install -g @geval-labs/cli
+    - npm run evals -- --type $EVAL_TYPE
+    - geval check --contract contract-$EVAL_TYPE.yaml --eval results-$EVAL_TYPE.json
+```
+
+## Best Practices
+
+1. **Use specific Node versions** - Pin Node.js version for consistency
+2. **Cache dependencies** - Speed up pipeline runs
+3. **Use artifacts** - Share eval results between jobs
+4. **Run on merge requests only** - Use `rules` to control when jobs run
+5. **Validate contracts early** - Catch errors before running evals

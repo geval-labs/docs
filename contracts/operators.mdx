@@ -1,0 +1,161 @@
+---
+title: 'Operators & Baselines'
+description: 'Learn about comparison operators and baseline types for contract rules'
+---
+
+## Comparison Operators
+
+Use these operators to compare metrics against thresholds or baselines:
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `==` | Equal to | `accuracy == 0.95` |
+| `!=` | Not equal to | `error_rate != 0` |
+| `<` | Less than | `latency < 200` |
+| `<=` | Less than or equal to | `latency <= 200` |
+| `>` | Greater than | `accuracy > 0.90` |
+| `>=` | Greater than or equal to | `accuracy >= 0.90` |
+
+## Baseline Types
+
+Choose how to compare your metrics:
+
+### Fixed Baseline
+
+Compare against a fixed threshold value.
+
+```yaml
+rules:
+  - metric: accuracy
+    operator: ">="
+    baseline: fixed
+    threshold: 0.85
+    description: Accuracy must be at least 85%
+```
+
+**Use when:**
+- You have absolute quality requirements
+- You want consistent thresholds across all runs
+- You're setting initial quality gates
+
+### Previous Baseline
+
+Compare against the previous run to detect regressions.
+
+```yaml
+rules:
+  - metric: latency_p95
+    operator: "<="
+    baseline: previous
+    max_delta: 0.1  # Optional: allow 10% increase
+    description: Latency should not increase more than 10%
+```
+
+**Use when:**
+- You want to prevent regressions
+- You're tracking improvements over time
+- You want relative comparisons
+
+### Main Branch Baseline
+
+Compare against the main branch baseline.
+
+```yaml
+rules:
+  - metric: accuracy
+    operator: ">="
+    baseline: main
+    max_delta: 0.05  # Optional: allow 5% decrease
+    description: Accuracy should not drop below main branch
+```
+
+**Use when:**
+- You want to compare PRs against production
+- You're enforcing that changes don't degrade quality
+- You want branch-based comparisons
+
+## Examples
+
+### Fixed Thresholds
+
+```yaml
+required_evals:
+  - name: quality-metrics
+    rules:
+      - metric: accuracy
+        operator: ">="
+        baseline: fixed
+        threshold: 0.90
+      
+      - metric: latency_p95
+        operator: "<="
+        baseline: fixed
+        threshold: 200
+      
+      - metric: error_rate
+        operator: "<="
+        baseline: fixed
+        threshold: 0.01
+```
+
+### Regression Detection
+
+```yaml
+required_evals:
+  - name: performance-metrics
+    rules:
+      - metric: latency_p95
+        operator: "<="
+        baseline: previous
+        max_delta: 0.15  # Allow 15% increase
+        description: Latency should not increase significantly
+      
+      - metric: accuracy
+        operator: ">="
+        baseline: previous
+        description: Accuracy should not decrease
+```
+
+### Main Branch Comparison
+
+```yaml
+required_evals:
+  - name: production-gate
+    rules:
+      - metric: accuracy
+        operator: ">="
+        baseline: main
+        description: Must match or exceed main branch accuracy
+      
+      - metric: cost_per_request
+        operator: "<="
+        baseline: main
+        max_delta: 0.20  # Allow 20% cost increase
+        description: Cost should not increase significantly
+```
+
+## Combining Baselines
+
+You can mix different baseline types in the same contract:
+
+```yaml
+required_evals:
+  - name: comprehensive-gate
+    rules:
+      # Fixed threshold for critical metrics
+      - metric: toxicity
+        operator: "<"
+        baseline: fixed
+        threshold: 0.1
+      
+      # Previous run for performance
+      - metric: latency_p95
+        operator: "<="
+        baseline: previous
+        max_delta: 0.1
+      
+      # Main branch for quality
+      - metric: accuracy
+        operator: ">="
+        baseline: main
+```

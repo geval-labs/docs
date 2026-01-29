@@ -1,97 +1,75 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Geval Documentation"
+description: "Eval-driven release gates for AI applications"
 ---
 
-## Setting up
+## What is Geval?
 
-Get your documentation site up and running in minutes.
+Geval turns evaluation results into **automated pass/fail decisions** in CI/CD pipelines. It's a lightweight, framework-agnostic tool that enforces quality contracts on your AI applications.
+
+**Geval is:**
+- ✅ **Format-agnostic** - Works with CSV, JSON, JSONL from any eval tool
+- ✅ **Contract-based** - Define quality requirements as code
+- ✅ **CI-native** - Exit codes and JSON output for automation
+- ✅ **Framework-agnostic** - Works with Promptfoo, LangSmith, OpenEvals, or custom tools
+
+**Geval is not:**
+- ❌ An eval runner (it consumes eval outputs)
+- ❌ A monitoring tool (it's for release gates)
+- ❌ A testing framework (it validates existing results)
 
 <Card
-  title="Start here"
+  title="Quick Start"
   icon="rocket"
-  href="/quickstart"
+  href="/getting-started"
   horizontal
 >
-  Follow our three step quickstart guide.
+  Get up and running with Geval in minutes. Install, create your first contract, and run your first check.
 </Card>
 
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
+## Key Features
 
 <Columns cols={2}>
   <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
+    title="Multi-Format Support"
+    icon="file-code"
   >
-    Edit your docs locally and preview them in real time.
+    Works with CSV, JSON, and JSONL files from any eval tool. No vendor lock-in.
   </Card>
   <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
+    title="CI/CD Integration"
+    icon="git-branch"
   >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+    Exit codes and JSON output for seamless integration with any CI/CD system.
   </Card>
   <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
+    title="Baseline Comparisons"
+    icon="chart-line"
   >
-    Auto-generate API documentation from OpenAPI specifications.
+    Compare against fixed thresholds, previous runs, or main branch baselines.
+  </Card>
+  <Card
+    title="Contract-Based"
+    icon="file-contract"
+  >
+    Define quality requirements as code. Version it. Review it. Commit it.
   </Card>
 </Columns>
 
-## Create beautiful pages
+## How It Works
 
-Everything you need to create world-class documentation.
+```text
+Your Evals → Geval Contract → CI Pass/Block Decision
+```
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
-
-## Need inspiration?
+1. **Define** - Write quality contracts in YAML
+2. **Integrate** - Add to your CI/CD pipeline
+3. **Enforce** - Block bad releases automatically
 
 <Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
+  title="View Examples"
+  icon="code"
+  href="/examples/performance"
 >
-  Browse our showcase of exceptional documentation sites.
+  See real-world examples for performance monitoring, safety checks, and more.
 </Card>

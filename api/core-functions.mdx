@@ -1,0 +1,223 @@
+---
+title: 'Core Functions'
+description: 'Complete reference for Geval core library functions'
+---
+
+## Contract Functions
+
+### parseContract
+
+Parse contract from a JavaScript object.
+
+```typescript
+import { parseContract } from "@geval-labs/core";
+
+const contract = parseContract({
+  version: 1,
+  name: "my-contract",
+  required_evals: [...],
+  // ...
+});
+```
+
+### parseContractFromYaml
+
+Parse contract from a YAML string.
+
+```typescript
+import { parseContractFromYaml } from "@geval-labs/core";
+
+const contractYaml = `
+version: 1
+name: my-contract
+required_evals:
+  - name: my-eval
+    rules: [...]
+`;
+
+const contract = parseContractFromYaml(contractYaml);
+```
+
+### validateContract
+
+Validate contract semantics and return any errors.
+
+```typescript
+import { validateContract } from "@geval-labs/core";
+
+const errors = validateContract(contract);
+if (errors.length > 0) {
+  errors.forEach(error => console.error(error.message));
+}
+```
+
+## Eval Result Functions
+
+### parseEvalFile
+
+Parse an eval file (CSV/JSON/JSONL) into a normalized eval result.
+
+```typescript
+import { parseEvalFile } from "@geval-labs/core";
+
+const csvContent = readFileSync("results.csv", "utf-8");
+const evalResult = parseEvalFile(csvContent, "results.csv", contract);
+```
+
+### parseEvalResult
+
+Parse normalized eval result from data (auto-detects format).
+
+```typescript
+import { parseEvalResult } from "@geval-labs/core";
+
+const evalData = {
+  evalName: "my-eval",
+  runId: "run-123",
+  metrics: {
+    accuracy: 0.95,
+    latency: 200
+  }
+};
+
+const evalResult = parseEvalResult(evalData);
+```
+
+## Evaluation Functions
+
+### evaluate
+
+Evaluate a contract against eval results.
+
+```typescript
+import { evaluate } from "@geval-labs/core";
+
+const decision = evaluate({
+  contract,
+  evalResults: [evalResult1, evalResult2],
+  baselines: {
+    "my-eval": {
+      type: "previous",
+      metrics: baselineMetrics,
+      source: { runId: "baseline-run" }
+    }
+  }
+});
+```
+
+### formatDecision
+
+Format a decision for display.
+
+```typescript
+import { formatDecision } from "@geval-labs/core";
+
+const output = formatDecision(decision, {
+  colors: true,
+  verbose: true
+});
+
+console.log(output);
+```
+
+## Comparison Functions
+
+### diffEvalResults
+
+Compare eval results between two runs.
+
+```typescript
+import { diffEvalResults } from "@geval-labs/core";
+
+const diff = diffEvalResults(previousResults, currentResults);
+
+console.log(diff.stats);
+// {
+//   improved: 2,
+//   regressed: 1,
+//   unchanged: 5
+// }
+
+diff.diffs.forEach(evalDiff => {
+  console.log(`${evalDiff.evalName}:`);
+  evalDiff.metrics.forEach(metric => {
+    console.log(`  ${metric.metric}: ${metric.previous} → ${metric.current}`);
+  });
+});
+```
+
+### diffContracts
+
+Compare two contracts.
+
+```typescript
+import { diffContracts } from "@geval-labs/core";
+
+const diff = diffContracts(previousContract, currentContract);
+
+diff.changes.forEach(change => {
+  console.log(`Change: ${change.type} in ${change.path}`);
+});
+```
+
+## Function Reference
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `parseContract(data)` | Parse contract from object | `EvalContract` |
+| `parseContractFromYaml(yaml)` | Parse contract from YAML | `EvalContract` |
+| `validateContract(contract)` | Validate contract | `ValidationError[]` |
+| `evaluate(input)` | Evaluate contract | `Decision` |
+| `parseEvalFile(content, filePath, contract)` | Parse eval file | `NormalizedEvalResult` |
+| `parseEvalResult(data)` | Parse normalized result | `NormalizedEvalResult` |
+| `diffEvalResults(previous, current)` | Compare results | `EvalDiff` |
+| `diffContracts(previous, current)` | Compare contracts | `ContractDiff` |
+| `formatDecision(decision, options)` | Format output | `string` |
+
+## Examples
+
+### Complete Workflow
+
+```typescript
+import {
+  parseContractFromYaml,
+  parseEvalFile,
+  evaluate,
+  formatDecision,
+  validateContract,
+} from "@geval-labs/core";
+import { readFileSync } from "fs";
+
+// 1. Load and parse contract
+const contractYaml = readFileSync("contract.yaml", "utf-8");
+const contract = parseContractFromYaml(contractYaml);
+
+// 2. Validate contract
+const errors = validateContract(contract);
+if (errors.length > 0) {
+  throw new Error(`Contract validation failed: ${errors.map(e => e.message).join(", ")}`);
+}
+
+// 3. Parse eval results
+const csvContent = readFileSync("results.csv", "utf-8");
+const evalResult = parseEvalFile(csvContent, "results.csv", contract);
+
+// 4. Evaluate
+const decision = evaluate({
+  contract,
+  evalResults: [evalResult],
+  baselines: {},
+});
+
+// 5. Format and display
+console.log(formatDecision(decision, { colors: true, verbose: true }));
+
+// 6. Use in CI
+if (decision.status === "PASS") {
+  console.log("✅ Safe to deploy!");
+  process.exit(0);
+} else {
+  console.log("❌ Deployment blocked");
+  process.exit(1);
+}
+```

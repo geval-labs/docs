@@ -1,0 +1,37 @@
+---
+title: 'geval diff'
+description: 'Compare eval results between two runs'
+---
+
+## Overview
+
+The `geval diff` command compares eval results between two runs to identify changes and regressions.
+
+## Usage
+
+```bash
+geval diff --previous <path> --current <path> [options]
+```
+
+## Options
+
+| Option | Description |
+|--------|-------------|
+| `-p, --previous <path>` | Path to previous eval results *(required)* |
+| `-c, --current <path>` | Path to current eval results *(required)* |
+| `--json` | Output results as JSON |
+| `--no-color` | Disable colored output |
+
+## Example
+
+```bash
+geval diff --previous baseline.json --current new.json
+```
+
+## Output
+
+The diff command shows:
+- Metrics that improved
+- Metrics that regressed
+- Metrics that remained unchanged
+- Detailed comparison for each metric

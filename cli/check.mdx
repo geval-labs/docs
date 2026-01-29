@@ -1,0 +1,59 @@
+---
+title: 'geval check'
+description: 'Evaluate contracts against eval results and enforce decisions'
+---
+
+## Overview
+
+The `geval check` command evaluates contracts against eval results and enforces decisions.
+
+## Usage
+
+```bash
+geval check --contract <path> --eval <paths...> [options]
+```
+
+## Options
+
+| Option | Description |
+|--------|-------------|
+| `-c, --contract <path>` | Path to eval contract (YAML/JSON) *(required)* |
+| `-e, --eval <paths...>` | Path(s) to eval result files (CSV/JSON/JSONL) *(required)* |
+| `-b, --baseline <path>` | Path to baseline eval results for comparison |
+| `--adapter <name>` | Force specific adapter (promptfoo, langsmith, openevals, generic) |
+| `--json` | Output results as JSON |
+| `--no-color` | Disable colored output |
+| `--verbose` | Show detailed output |
+
+## Examples
+
+### Basic check
+
+```bash
+geval check -c contract.yaml -e results.csv
+```
+
+### Multiple eval files
+
+```bash
+geval check -c contract.yaml -e results1.json results2.json
+```
+
+### With baseline comparison
+
+```bash
+geval check -c contract.yaml -e results.csv -b baseline.json
+```
+
+### JSON output for CI
+
+```bash
+geval check -c contract.yaml -e results.csv --json
+```
+
+## Exit Codes
+
+- `0` - PASS (safe to merge/deploy)
+- `1` - BLOCK (do not merge/deploy)
+- `2` - REQUIRES_APPROVAL (needs human review)
+- `3` - ERROR (something went wrong)

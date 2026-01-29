@@ -1,43 +1,48 @@
-# Mintlify Starter Kit
+# Geval Documentation
 
-Use the starter kit to get your docs deployed and ready to customize.
+This repository contains the documentation for [Geval](https://geval.io) - Eval-driven release gates for AI applications.
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+## Structure
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
+This documentation follows [Mintlify's](https://mintlify.com) template structure:
 
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
+- `docs.json` - Configuration file for Mintlify
+- `index.mdx` - Landing page
+- `getting-started.mdx` - Getting started guide
+- `cli/` - CLI command documentation
+- `contracts/` - Contract reference documentation
+- `integration/` - CI/CD integration guides
+- `api/` - API reference documentation
+- `examples/` - Example use cases
 
-## Development
+## Local Development
 
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
+To preview the documentation locally:
 
+```bash
+# Install Mintlify CLI
+npm install -g mintlify
+
+# Start development server
+mintlify dev
 ```
-npm i -g mint
-```
 
-Run the following command at the root of your documentation, where your `docs.json` is located:
+The documentation will be available at `http://localhost:3000`
 
-```
-mint dev
-```
+## Deployment
 
-View your local preview at `http://localhost:3000`.
+This documentation is deployed to `docs.geval.io` via Mintlify's hosting platform.
 
-## Publishing changes
+## Contributing
 
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
+1. Make changes to `.mdx` files
+2. Update `docs.json` if adding new pages
+3. Test locally with `mintlify dev`
+4. Commit and push changes
+5. Mintlify will automatically deploy
 
-## Need help?
+## Resources
 
-### Troubleshooting
-
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.json`.
-
-### Resources
-- [Mintlify documentation](https://mintlify.com/docs)
+- [Mintlify Documentation](https://mintlify.com/docs)
+- [Geval GitHub](https://github.com/geval-labs/geval)
+- [Geval Website](https://geval.io)

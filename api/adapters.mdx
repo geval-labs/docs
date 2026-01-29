@@ -1,0 +1,186 @@
+---
+title: 'Adapters'
+description: 'Work with different eval tool formats using Geval adapters'
+---
+
+## Overview
+
+Adapters allow Geval to work with different eval tool formats. Geval includes built-in adapters for popular tools and provides a generic adapter for custom formats.
+
+## Built-in Adapters
+
+### GenericAdapter
+
+Works with any JSON format that matches Geval's normalized structure.
+
+```typescript
+import { GenericAdapter } from "@geval-labs/core";
+
+const adapter = new GenericAdapter();
+const evalData = {
+  evalName: "my-eval",
+  runId: "run-123",
+  metrics: {
+    accuracy: 0.95,
+    latency: 200
+  }
+};
+
+const result = adapter.parse(evalData);
+```
+
+### PromptfooAdapter
+
+Automatically detects and parses Promptfoo output format.
+
+```typescript
+import { PromptfooAdapter } from "@geval-labs/core";
+
+const adapter = new PromptfooAdapter();
+const promptfooOutput = {
+  // Promptfoo format
+};
+
+const result = adapter.parse(promptfooOutput);
+```
+
+### LangSmithAdapter
+
+Parses LangSmith CSV exports.
+
+```typescript
+import { LangSmithAdapter } from "@geval-labs/core";
+
+const adapter = new LangSmithAdapter();
+const langsmithCsv = `id,accuracy,latency
+1,0.95,200
+2,0.92,180`;
+
+const result = adapter.parse(langsmithCsv);
+```
+
+### OpenEvalsAdapter
+
+Parses OpenEvals JSON format.
+
+```typescript
+import { OpenEvalsAdapter } from "@geval-labs/core";
+
+const adapter = new OpenEvalsAdapter();
+const openevalsData = {
+  // OpenEvals format
+};
+
+const result = adapter.parse(openevalsData);
+```
+
+## Auto-Detection
+
+Geval can automatically detect the format:
+
+```typescript
+import { detectAdapter, parseWithAdapter } from "@geval-labs/core";
+
+// Detect adapter
+const adapterName = detectAdapter(evalData);
+
+// Parse with detected adapter
+const result = parseWithAdapter(evalData, adapterName);
+```
+
+## Using Adapters
+
+### With parseEvalResult
+
+`parseEvalResult` automatically detects and uses the appropriate adapter:
+
+```typescript
+import { parseEvalResult } from "@geval-labs/core";
+
+// Auto-detects format and uses appropriate adapter
+const result = parseEvalResult(anyEvalData);
+```
+
+### Explicit Adapter Usage
+
+Use a specific adapter when you know the format:
+
+```typescript
+import { PromptfooAdapter } from "@geval-labs/core";
+
+const adapter = new PromptfooAdapter();
+const result = adapter.parse(promptfooOutput);
+```
+
+## Custom Formats
+
+For custom formats, use the GenericAdapter with source configuration:
+
+```typescript
+import { parseEvalSource } from "@geval-labs/core";
+
+const csvContent = readFileSync("custom-export.csv", "utf-8");
+const sourceConfig = {
+  type: "csv",
+  metrics: [
+    { column: "score", aggregate: "avg" },
+    { column: "passed", aggregate: "pass_rate" }
+  ],
+  evalName: { fixed: "custom-eval" }
+};
+
+const result = parseEvalSource(csvContent, sourceConfig);
+```
+
+## Adapter Reference
+
+| Adapter | Format | Auto-Detected |
+|---------|--------|---------------|
+| `GenericAdapter` | Normalized JSON | ✅ |
+| `PromptfooAdapter` | Promptfoo JSON | ✅ |
+| `LangSmithAdapter` | LangSmith CSV | ✅ |
+| `OpenEvalsAdapter` | OpenEvals JSON | ✅ |
+
+## Examples
+
+### Working with Multiple Formats
+
+```typescript
+import {
+  parseEvalResult,
+  PromptfooAdapter,
+  LangSmithAdapter,
+} from "@geval-labs/core";
+
+// Auto-detect
+const result1 = parseEvalResult(promptfooData);
+
+// Explicit adapter
+const promptfooAdapter = new PromptfooAdapter();
+const result2 = promptfooAdapter.parse(promptfooData);
+
+// LangSmith CSV
+const langsmithAdapter = new LangSmithAdapter();
+const result3 = langsmithAdapter.parse(langsmithCsv);
+```
+
+### Custom CSV Parsing
+
+```typescript
+import { parseEvalSource } from "@geval-labs/core";
+
+const customCsv = `id,my_score,status
+1,0.95,pass
+2,0.88,fail`;
+
+const sourceConfig = {
+  type: "csv",
+  metrics: [
+    { column: "my_score", aggregate: "avg", as: "average_score" },
+    { column: "status", aggregate: "pass_rate", as: "success_rate" }
+  ],
+  evalName: { fixed: "custom-eval" }
+};
+
+const result = parseEvalSource(customCsv, sourceConfig);
+```

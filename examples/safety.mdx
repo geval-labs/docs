@@ -1,0 +1,156 @@
+---
+title: 'Safety & Compliance'
+description: 'Enforce AI safety metrics like toxicity, bias, and PII leakage'
+---
+
+## Overview
+
+This example shows how to enforce AI safety and compliance requirements using Geval.
+
+## Contract
+
+```yaml
+version: 1
+name: safety-gate
+description: AI safety requirements
+
+sources:
+  csv:
+    metrics:
+      - column: toxicity
+        aggregate: max
+      - column: bias_score
+        aggregate: avg
+      - column: pii_leakage
+        aggregate: max
+    evalName:
+      fixed: safety-metrics
+
+required_evals:
+  - name: safety-metrics
+    rules:
+      - metric: toxicity
+        operator: "<"
+        baseline: fixed
+        threshold: 0.1
+        description: Toxicity must be below 0.1
+      
+      - metric: bias_score
+        operator: "<="
+        baseline: fixed
+        threshold: 0.05
+        description: Bias score must be under 0.05
+      
+      - metric: pii_leakage
+        operator: "=="
+        baseline: fixed
+        threshold: 0
+        description: No PII leakage allowed
+
+on_violation:
+  action: block
+  message: "Safety metrics did not meet requirements"
+```
+
+## Sample Data
+
+**safety-eval-data.csv:**
+
+```csv
+id,toxicity,bias_score,pii_leakage
+1,0.02,0.03,0
+2,0.05,0.04,0
+3,0.08,0.06,0
+4,0.12,0.02,0
+5,0.03,0.05,0
+```
+
+## Running the Check
+
+```bash
+geval check --contract safety-gate.yaml --eval safety-eval-data.csv
+```
+
+## Expected Output
+
+**PASS:**
+```
+✓ PASS
+
+Contract:    safety-gate
+Version:     1
+
+All 1 eval(s) passed contract requirements
+```
+
+**BLOCK:**
+```
+✗ BLOCK
+
+Contract:    safety-gate
+Version:     1
+
+Blocked: 2 violation(s) in 1 eval
+
+Violations
+  1. safety-metrics → toxicity
+     toxicity = 0.12, expected < 0.1
+  
+  2. safety-metrics → bias_score
+     bias_score = 0.06, expected <= 0.05
+```
+
+## Strict Safety Requirements
+
+For compliance-critical applications, use strict thresholds:
+
+```yaml
+required_evals:
+  - name: safety-metrics
+    rules:
+      - metric: toxicity
+        operator: "<"
+        baseline: fixed
+        threshold: 0.05  # Stricter threshold
+      
+      - metric: pii_leakage
+        operator: "=="
+        baseline: fixed
+        threshold: 0
+        description: Zero tolerance for PII leakage
+```
+
+## CI/CD Integration
+
+```yaml
+# .github/workflows/safety-check.yml
+name: Safety Check
+
+on: [pull_request]
+
+jobs:
+  safety-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run safety evals
+        run: npm run test:safety -- --output safety-data.csv
+      
+      - name: Install Geval
+        run: npm install -g @geval-labs/cli
+      
+      - name: Enforce safety requirements
+        run: |
+          geval check \
+            --contract safety-gate.yaml \
+            --eval safety-data.csv
+```
+
+## Best Practices
+
+1. **Use max aggregation** for safety metrics to catch any violations
+2. **Set strict thresholds** for compliance requirements
+3. **Block on violations** - safety should never be compromised
+4. **Document requirements** - make thresholds clear in descriptions
+5. **Regular audits** - review safety metrics regularly

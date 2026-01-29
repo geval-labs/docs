@@ -1,0 +1,250 @@
+---
+title: 'TypeScript Types'
+description: 'Complete TypeScript type definitions for Geval'
+---
+
+## Core Types
+
+### EvalContract
+
+The main contract type that defines quality requirements.
+
+```typescript
+type EvalContract = {
+  version: number;
+  name: string;
+  description?: string;
+  environment?: "production" | "staging" | "development";
+  sources?: SourceConfig;
+  required_evals: RequiredEval[];
+  on_violation: ViolationAction;
+  metadata?: Record<string, string>;
+};
+```
+
+### Decision
+
+The result of evaluating a contract against eval results.
+
+```typescript
+type Decision = {
+  status: "PASS" | "BLOCK" | "REQUIRES_APPROVAL";
+  contract: EvalContract;
+  evals: EvalDecision[];
+  violations: Violation[];
+  summary?: string;
+};
+```
+
+### NormalizedEvalResult
+
+Standardized format for eval results.
+
+```typescript
+type NormalizedEvalResult = {
+  evalName: string;
+  runId: string;
+  timestamp?: string;
+  metrics: Record<string, number>;
+  metadata?: Record<string, any>;
+};
+```
+
+### Violation
+
+Represents a rule violation.
+
+```typescript
+type Violation = {
+  evalName: string;
+  metric: string;
+  rule: Rule;
+  actual: number;
+  expected: string;
+  baseline?: BaselineComparison;
+};
+```
+
+### BaselineData
+
+Data structure for baseline comparisons.
+
+```typescript
+type BaselineData = {
+  type: "fixed" | "previous" | "main";
+  metrics: Record<string, number>;
+  source?: {
+    runId?: string;
+    timestamp?: string;
+  };
+  maxDelta?: number;
+};
+```
+
+## Type Exports
+
+All types are exported from `@geval-labs/core`:
+
+```typescript
+import type {
+  EvalContract,
+  Decision,
+  Violation,
+  NormalizedEvalResult,
+  BaselineData,
+  Rule,
+  RequiredEval,
+  SourceConfig,
+  ViolationAction,
+} from "@geval-labs/core";
+```
+
+## Usage Examples
+
+### Type-Safe Contract Creation
+
+```typescript
+import type { EvalContract } from "@geval-labs/core";
+
+const contract: EvalContract = {
+  version: 1,
+  name: "my-contract",
+  required_evals: [
+    {
+      name: "quality-metrics",
+      rules: [
+        {
+          metric: "accuracy",
+          operator: ">=",
+          baseline: "fixed",
+          threshold: 0.85,
+        },
+      ],
+    },
+  ],
+  on_violation: {
+    action: "block",
+  },
+};
+```
+
+### Type-Safe Decision Handling
+
+```typescript
+import type { Decision } from "@geval-labs/core";
+import { evaluate } from "@geval-labs/core";
+
+const decision: Decision = evaluate({
+  contract,
+  evalResults: [evalResult],
+  baselines: {},
+});
+
+if (decision.status === "PASS") {
+  // TypeScript knows this is safe
+  console.log("All checks passed!");
+} else {
+  // TypeScript knows violations exist
+  decision.violations.forEach((violation) => {
+    console.log(`Violation: ${violation.metric}`);
+  });
+}
+```
+
+### Custom Type Guards
+
+```typescript
+import type { Decision } from "@geval-labs/core";
+
+function isBlocked(decision: Decision): boolean {
+  return decision.status === "BLOCK";
+}
+
+function hasViolations(decision: Decision): boolean {
+  return decision.violations.length > 0;
+}
+```
+
+## Complete Type Reference
+
+### Contract Types
+
+```typescript
+type EvalContract = {
+  version: number;
+  name: string;
+  description?: string;
+  environment?: string;
+  sources?: SourceConfig;
+  required_evals: RequiredEval[];
+  on_violation: ViolationAction;
+  metadata?: Record<string, string>;
+};
+
+type RequiredEval = {
+  name: string;
+  description?: string;
+  rules: Rule[];
+};
+
+type Rule = {
+  metric: string;
+  operator: "==" | "!=" | "<" | "<=" | ">" | ">=";
+  baseline: "fixed" | "previous" | "main";
+  threshold?: number;
+  max_delta?: number;
+  description?: string;
+};
+
+type ViolationAction = {
+  action: "block" | "require_approval" | "warn";
+  message?: string;
+};
+```
+
+### Result Types
+
+```typescript
+type NormalizedEvalResult = {
+  evalName: string;
+  runId: string;
+  timestamp?: string;
+  metrics: Record<string, number>;
+  metadata?: Record<string, any>;
+};
+
+type Decision = {
+  status: "PASS" | "BLOCK" | "REQUIRES_APPROVAL";
+  contract: EvalContract;
+  evals: EvalDecision[];
+  violations: Violation[];
+  summary?: string;
+};
+
+type EvalDecision = {
+  name: string;
+  status: "PASS" | "BLOCK" | "REQUIRES_APPROVAL";
+  rules: RuleDecision[];
+};
+
+type RuleDecision = {
+  rule: Rule;
+  status: "PASS" | "FAIL";
+  actual: number;
+  expected: string;
+};
+```
+
+## Type Utilities
+
+### Type Guards
+
+```typescript
+function isPass(decision: Decision): decision is Decision & { status: "PASS" } {
+  return decision.status === "PASS";
+}
+
+function hasViolations(decision: Decision): decision is Decision & { violations: Violation[] } {
+  return decision.violations.length > 0;
+}
+```
