@@ -1,37 +1,23 @@
 ---
-title: 'geval explain'
-description: 'Explain why a contract passed or failed with detailed analysis'
+title: geval explain
+description: Print a detailed human-readable explanation for the same inputs as geval check — ideal for PR comments or logs.
 ---
 
-## Overview
-
-The `geval explain` command provides detailed explanations of why a contract passed or failed, helping you understand the decision-making process.
-
-## Usage
+## Synopsis
 
 ```bash
-geval explain --contract <path> --eval <paths...> [options]
+geval explain --contract <path> [--contract <path> ...] --signals <path> [options]
 ```
 
-## Options
+Arguments mirror **`geval check`** for contracts and signals (including multiple `--contract` and `--combine-contracts`).
 
-| Option | Description |
-|--------|-------------|
-| `-c, --contract <path>` | Path to eval contract (YAML/JSON) *(required)* |
-| `-e, --eval <paths...>` | Path(s) to eval result files *(required)* |
-| `-b, --baseline <path>` | Path to baseline eval results |
-| `--verbose` | Show detailed explanations |
-| `--no-color` | Disable colored output |
+## When to use
 
-## Example
+- Paste into a **pull request** comment after a check.
+- Capture **why** a BLOCK or REQUIRE_APPROVAL happened for operators.
 
-```bash
-geval explain -c contract.yaml -e results.json --verbose
-```
+Unlike **`check`**, explain focuses on narrative output; use **`check`** for exit-code gating in CI.
 
-## Use Cases
+## See also
 
-- Debugging why a contract failed
-- Understanding metric comparisons
-- Analyzing baseline differences
-- Getting detailed violation information
+[check](/cli/check) · [GitHub Actions](/integration/github-actions)

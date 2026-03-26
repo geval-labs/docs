@@ -1,0 +1,40 @@
+---
+title: Example — Safety-focused gate
+description: Block risky releases when hallucination or retrieval metrics cross thresholds.
+---
+
+This example mirrors the **safety-and-blocking** style policy from **`geval init`**: hard **BLOCK** rules when model or retrieval quality crosses a line.
+
+## Signals
+
+Your pipeline should emit metrics such as:
+
+- `hallucination_rate` (on `component: generator`)
+- `context_relevance` (on `component: retrieval`)
+
+## Policy idea
+
+- **Priority 1** — If hallucination rate exceeds a ceiling → **BLOCK** with a clear reason.  
+- **Priority 2** — If retrieval relevance falls below a floor → **BLOCK**.
+
+## Contract
+
+List the policy file(s) in **`contract.yaml`**:
+
+```yaml
+name: release-gate
+version: "1.0.0"
+policies:
+  - path: policies/safety-and-blocking.yaml
+```
+
+## Run
+
+```bash
+geval validate-contract contract.yaml
+geval check --contract contract.yaml --signals signals.json
+```
+
+## Next
+
+[Policy rules](/configuration/policy-rules) · [geval init](/cli/init)

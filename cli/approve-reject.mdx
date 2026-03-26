@@ -1,0 +1,32 @@
+---
+title: geval approve & geval reject
+description: Record human approval or rejection for audit trails when policy outcomes require human review.
+---
+
+These commands write small JSON files you can commit or attach to release processes. They do **not** by themselves change Geval’s evaluation logic — they **record** a human decision.
+
+## geval approve
+
+```bash
+geval approve --reason "Reviewed and approved" [--output path] [--by name]
+```
+
+## geval reject
+
+```bash
+geval reject --reason "Needs more work" [--output path] [--by name]
+```
+
+## Typical options
+
+| Option | Description |
+|--------|-------------|
+| `--reason` / `-r` | Required human-readable string. |
+| `--output` / `-o` | Output file path (defaults are under `.geval/` in many setups). |
+| `--by` | Who approved/rejected (defaults may use environment such as `USER`). |
+
+Exact default paths depend on your Geval version; run `geval approve --help`.
+
+## See also
+
+[How Geval works](/concepts/how-geval-works) · [troubleshooting](/reference/troubleshooting)

@@ -1,0 +1,34 @@
+---
+title: Example — CI merge gate
+description: End-to-end pattern — build signals, validate contracts, run check, branch on exit code.
+---
+
+## Pipeline shape
+
+1. **Checkout** your repository (and any shared contract repos).  
+2. **Generate `signals.json`** from tests, eval exports, or monitoring snapshots.  
+3. **`geval validate-contract`** on each contract YAML you care about.  
+4. **`geval check`** with one or more `--contract` flags.  
+5. **Gate on exit code** — `0` merge OK; `1`/`2` per your policy.
+
+## Sketch (pseudo-YAML)
+
+```yaml
+steps:
+  - name: Export signals
+    run: python scripts/build_signals.py > signals.json
+
+  - name: Validate contracts
+    run: geval validate-contract .geval/contract.yaml
+
+  - name: Geval check
+    run: geval check --contract .geval/contract.yaml --signals signals.json
+```
+
+## Artifact upload
+
+Upload **`.geval/decisions/*.json`** as a CI artifact for audit. See [Decision artifacts](/reference/decision-artifacts).
+
+## See also
+
+[GitHub Actions](/integration/github-actions) · [Exit codes](/integration/exit-codes)

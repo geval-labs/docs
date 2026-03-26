@@ -1,0 +1,58 @@
+---
+title: Contracts and policies
+description: Contract YAML lists policy files; each policy file contains rules. Paths, combine behavior, and init layout.
+---
+
+## Contract file (`contract.yaml`)
+
+A **contract** is the unit Geval loads for an evaluation run (you can pass several contracts to one `geval check`).
+
+### Typical fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Human-readable gate name (audit). |
+| `version` | Yes | Semver string; bump when policies or expectations change. |
+| `policies` | Yes | List of `{ path: "..." }` entries relative to the contract file’s directory. |
+| `combine` | No | How to merge policy outcomes **inside** this contract. If omitted, the engine applies **worst-case by severity** (BLOCK &gt; REQUIRE_APPROVAL &gt; PASS). |
+
+### Example
+
+```yaml
+name: ai-release-quality-gate
+version: "1.0.0"
+policies:
+  - path: policies/safety-and-blocking.yaml
+  - path: policies/quality-and-approval.yaml
+```
+
+### `geval init` layout
+
+Running **`geval init`** creates a contract plus **two starter policies** with descriptive filenames so teams know what to edit first:
+
+- `policies/safety-and-blocking.yaml` — example hard blocks  
+- `policies/quality-and-approval.yaml` — example review / approval style rules  
+
+Your own repos can use any filenames; keep paths in `contract.yaml` in sync.
+
+## Policy file
+
+Each referenced YAML file is a **policy**: metadata (`name`, `version`) plus a **`policy`** block with **`rules`**. See [Policy rules](/configuration/policy-rules).
+
+## Combining policies inside one contract
+
+When a contract lists multiple policies, each policy produces an outcome; those outcomes are merged using the contract’s **`combine`** rule, or the default worst-case merge if omitted.
+
+## Multiple contracts in one CI job
+
+Pass multiple `--contract` flags to `geval check`. Cross-contract merge is controlled by **`--combine-contracts`** (default `worst_case`). See [geval check](/cli/check).
+
+## Validate before CI
+
+```bash
+geval validate-contract path/to/contract.yaml
+```
+
+## Next
+
+[Policy rules](/configuration/policy-rules) · [Versioning](/configuration/versioning) · [geval init](/cli/init)

@@ -1,0 +1,39 @@
+---
+title: Versioning
+description: Version contracts, policies, and signals for auditability — nothing should change without a version story.
+---
+
+Geval is built for **audit trails**: decisions record which contract, policies, and signals were used.
+
+## Contract
+
+- **`name`** — Stable identifier for the gate (e.g. `ai-release-quality-gate`).
+- **`version`** — Bump when you **add/remove policy paths** or materially change what “passing this gate” means.
+
+## Policy
+
+Each policy file may carry its own **`name`** and **`version`**. Bump the policy version when **rules** change. Decision artifacts record per-policy identity and hash when available.
+
+## Signals
+
+Optional top-level **`name`** and **`version`** on the signals JSON identify the evidence set. Bump **`version`** when your pipeline output shape or semantics change.
+
+Example:
+
+```json
+{
+  "name": "ci-signals",
+  "version": "1.2.0",
+  "signals": [
+    { "metric": "accuracy", "value": 0.94 }
+  ]
+}
+```
+
+## Decision artifacts
+
+Each `geval check` can write a JSON artifact under **`.geval/decisions/`** including contract hashes, policy hashes, and signals hash — see [Decision artifacts](/reference/decision-artifacts).
+
+## Next
+
+[Contract and policies](/configuration/contract-and-policies) · [troubleshooting](/reference/troubleshooting)

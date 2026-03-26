@@ -1,0 +1,46 @@
+---
+title: geval init
+description: Scaffold contract.yaml, policies, signals.json, and README in a folder — safe to run beside application code.
+---
+
+## Synopsis
+
+```bash
+geval init [directory]
+```
+
+**Defaults**
+
+- **`directory`** — `.geval` if omitted.
+
+**Flags**
+
+- **`--force`** — Overwrite existing template files if the directory already contains `contract.yaml` or `signals.json`.
+
+## What gets created
+
+| Path | Purpose |
+|------|---------|
+| `contract.yaml` | Starter contract with a clear **name** and **policies** pointing at descriptive policy filenames. |
+| `policies/safety-and-blocking.yaml` | Example **block** rules (tune metrics/thresholds). |
+| `policies/quality-and-approval.yaml` | Example **approval** / review-style rules. |
+| `signals.json` | Example metrics; replace with your pipeline output. |
+| `README.md` | Plain-English map of the folder and commands to run. |
+
+## Examples
+
+```bash
+./geval init
+./geval init my-geval-config
+./geval init .geval --force
+```
+
+After editing, run:
+
+```bash
+./geval check --contract .geval/contract.yaml --signals .geval/signals.json
+```
+
+## See also
+
+[Quickstart](/quickstart) · [Contract and policies](/configuration/contract-and-policies)

@@ -1,0 +1,50 @@
+---
+title: How Geval works
+description: Contracts, policies, signals, combination rules, and outcomes — the full mental model.
+---
+
+## Purpose
+
+Geval **orchestrates and reconciles** explicit rules against **your** evidence. It does not run eval jobs or choose thresholds for you. Think: **signals in** → **rules applied** → **one outcome** suitable for CI and audit.
+
+## The four layers
+
+### 1. Signals (`signals.json`)
+
+A JSON file of **facts**: metrics with optional scores, optional context (`system`, `component`, …), and **presence-only** rows (no `value`) when “this happened” is enough. See [Signals and rules](/concepts/signals-and-rules).
+
+### 2. Policy (YAML)
+
+Each **policy** file contains a list of **rules**. Each rule has:
+
+- **`priority`** — unique within that policy; **lower number = higher precedence** when multiple rules match.
+- **`when`** — condition on signals (metric, optional component, operator, threshold or `presence`).
+- **`then`** — `pass`, `block`, or `require_approval`, with an optional reason.
+
+Geval records **all** matches; the **winning** rule is the match with the **best** (smallest) priority.
+
+### 3. Contract (`contract.yaml`)
+
+A **contract** lists **which policy files** participate in one evaluation. Paths are relative to the contract file’s directory.
+
+Optionally, YAML may include **`combine`** for how multiple policies’ outcomes merge **within that contract**; if omitted, the engine uses **worst-case by severity** (any `BLOCK` wins; else any `REQUIRE_APPROVAL`; else `PASS`).
+
+### 4. Check (`geval check`)
+
+`geval check` loads **one or more contracts** (repeat `--contract`) and **one signals file**. It:
+
+1. Resolves and loads every policy for every contract.
+2. Evaluates each policy against the same signal graph.
+3. Combines outcomes **per contract**, then combines **across contracts** (see `--combine-contracts` on [geval check](/cli/check)).
+4. Writes a **decision artifact** under `.geval/decisions/` (see [Decision artifacts](/reference/decision-artifacts)).
+5. Exits with **0 / 1 / 2** matching **PASS / REQUIRE_APPROVAL / BLOCK**.
+
+## Human-in-the-loop
+
+When the outcome is **REQUIRE_APPROVAL**, your process can require a reviewer. **`geval approve`** and **`geval reject`** write small JSON records (default paths under `.geval/`) for audit trails — see [approve & reject](/cli/approve-reject).
+
+## What to read next
+
+- [Contract and policies](/configuration/contract-and-policies) — YAML shapes  
+- [Policy rules](/configuration/policy-rules) — `when` / `then` reference  
+- [Versioning](/configuration/versioning) — bumping contract, policy, and signals versions  

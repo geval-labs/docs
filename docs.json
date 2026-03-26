@@ -1,17 +1,17 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Geval Documentation",
-  "description": "Eval-driven release gates for AI applications",
+  "name": "Geval",
+  "description": "Policy-as-code release gates for AI systems — contracts, policies, signals, deterministic outcomes.",
   "colors": {
-    "primary": "#10b981",
+    "primary": "#059669",
     "light": "#34d399",
     "dark": "#022c22"
   },
   "favicon": "/favicon.svg",
   "logo": {
-    "light": "https://geval.io/white_bg_greenlogo.svg",
-    "dark": "https://geval.io/white_bg_greenlogo.svg"
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
   },
   "navigation": {
     "tabs": [
@@ -19,31 +19,41 @@
         "tab": "Documentation",
         "groups": [
           {
-            "group": "Get Started",
+            "group": "Overview",
             "pages": [
-              "getting-started"
+              "index",
+              "quickstart",
+              "installation"
             ]
           },
           {
-            "group": "CLI Reference",
+            "group": "Concepts",
+            "pages": [
+              "concepts/how-geval-works",
+              "concepts/signals-and-rules"
+            ]
+          },
+          {
+            "group": "Authoring",
+            "pages": [
+              "configuration/contract-and-policies",
+              "configuration/policy-rules",
+              "configuration/versioning"
+            ]
+          },
+          {
+            "group": "CLI",
             "pages": [
               "cli/check",
-              "cli/diff",
+              "cli/init",
+              "cli/demo",
               "cli/explain",
-              "cli/validate"
+              "cli/validate-contract",
+              "cli/approve-reject"
             ]
           },
           {
-            "group": "Contracts",
-            "pages": [
-              "contracts/overview",
-              "contracts/aggregation",
-              "contracts/operators",
-              "contracts/sources"
-            ]
-          },
-          {
-            "group": "Integration",
+            "group": "CI/CD",
             "pages": [
               "integration/github-actions",
               "integration/gitlab-ci",
@@ -51,20 +61,24 @@
             ]
           },
           {
-            "group": "API Reference",
+            "group": "Reference",
             "pages": [
-              "api/overview",
-              "api/core-functions",
-              "api/adapters",
-              "api/types"
+              "reference/decision-artifacts",
+              "reference/troubleshooting"
             ]
           },
           {
             "group": "Examples",
             "pages": [
-              "examples/performance",
-              "examples/safety",
-              "examples/multi-eval"
+              "examples/safety-gate",
+              "examples/multi-contract",
+              "examples/ci-gate"
+            ]
+          },
+          {
+            "group": "Tools",
+            "pages": [
+              "tools/config-generator"
             ]
           }
         ]
@@ -73,14 +87,19 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://docs.geval.io",
-          "icon": "book-open-cover"
+          "anchor": "Website",
+          "href": "https://geval.io",
+          "icon": "globe"
         },
         {
           "anchor": "GitHub",
           "href": "https://github.com/geval-labs/geval",
           "icon": "github"
+        },
+        {
+          "anchor": "Config generator",
+          "href": "https://config.geval.io",
+          "icon": "sparkles"
         }
       ]
     }
@@ -88,14 +107,18 @@
   "navbar": {
     "links": [
       {
+        "label": "Releases",
+        "href": "https://github.com/geval-labs/geval/releases"
+      },
+      {
         "label": "GitHub",
         "href": "https://github.com/geval-labs/geval"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Get Early Access",
-      "href": "https://geval.io#waitlist"
+      "label": "Get started",
+      "href": "/quickstart"
     }
   },
   "footer": {

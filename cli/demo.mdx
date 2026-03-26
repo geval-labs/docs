@@ -1,0 +1,33 @@
+---
+title: geval demo
+description: Run the built-in demo contract and signals — no YAML files required.
+---
+
+## Synopsis
+
+```bash
+geval demo [--json]
+```
+
+## Behavior
+
+Loads embedded **signals** and a **policy**, evaluates them, and prints a **report** to stdout.
+
+Exit codes match **`geval check`**:
+
+| Code | Meaning |
+|------|---------|
+| `0` | PASS |
+| `1` | REQUIRE_APPROVAL |
+| `2` | BLOCK |
+
+Use **`--json`** for structured output suitable for tooling.
+
+## When to use
+
+- Verify the binary you downloaded is the correct **`geval`** (not another CLI with the same name).
+- Smoke-test CI images before wiring real contracts.
+
+## See also
+
+[Installation](/installation) · [check](/cli/check)

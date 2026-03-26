@@ -1,59 +1,66 @@
 ---
-title: 'geval check'
-description: 'Evaluate contracts against eval results and enforce decisions'
+title: geval check
+description: Evaluate one or more contracts against a signals file — the primary CI entrypoint.
 ---
 
-## Overview
-
-The `geval check` command evaluates contracts against eval results and enforces decisions.
-
-## Usage
+## Synopsis
 
 ```bash
-geval check --contract <path> --eval <paths...> [options]
+geval check --contract <path> [--contract <path> ...] --signals <path> [options]
 ```
 
-## Options
+**Required**
+
+- **`--contract` / `-c`** — Contract YAML. Repeat for **multiple contracts** in one run (e.g. multiple teams’ gates on one PR).
+- **`--signals` / `-s`** — Signals JSON file shared across those contracts.
+
+## Common options
 
 | Option | Description |
 |--------|-------------|
-| `-c, --contract <path>` | Path to eval contract (YAML/JSON) *(required)* |
-| `-e, --eval <paths...>` | Path(s) to eval result files (CSV/JSON/JSONL) *(required)* |
-| `-b, --baseline <path>` | Path to baseline eval results for comparison |
-| `--adapter <name>` | Force specific adapter (promptfoo, langsmith, openevals, generic) |
-| `--json` | Output results as JSON |
-| `--no-color` | Disable colored output |
-| `--verbose` | Show detailed output |
+| `--signals` / `-s` | Path to signals JSON. |
+| `--contract` / `-c` | Contract path; repeat for each contract. |
+| `--combine-contracts` | How to merge outcomes **across** contracts (`worst_case` default). |
+| `--env` / `-e` | Optional environment label (e.g. `prod`); forwarded where reports use it. |
+| `--json` | Print structured JSON to stdout instead of a human report. |
 
 ## Examples
 
-### Basic check
+**Single contract**
 
 ```bash
-geval check -c contract.yaml -e results.csv
+./geval check --contract .geval/contract.yaml --signals .geval/signals.json
 ```
 
-### Multiple eval files
+**Multiple contracts**
 
 ```bash
-geval check -c contract.yaml -e results1.json results2.json
+./geval check \
+  -c team-a/contract.yaml \
+  -c team-b/contract.yaml \
+  --signals signals.json
 ```
 
-### With baseline comparison
+**JSON for automation**
 
 ```bash
-geval check -c contract.yaml -e results.csv -b baseline.json
+./geval check -c contract.yaml --signals signals.json --json
 ```
 
-### JSON output for CI
+## Exit codes
 
-```bash
-geval check -c contract.yaml -e results.csv --json
-```
+| Code | Outcome |
+|------|---------|
+| `0` | **PASS** |
+| `1` | **REQUIRE_APPROVAL** |
+| `2` | **BLOCK** |
 
-## Exit Codes
+Non-zero process exit from Geval on parse/load errors follows normal shell conventions (see [Exit codes](/integration/exit-codes)).
 
-- `0` - PASS (safe to merge/deploy)
-- `1` - BLOCK (do not merge/deploy)
-- `2` - REQUIRES_APPROVAL (needs human review)
-- `3` - ERROR (something went wrong)
+## Artifacts
+
+Successful runs write a decision artifact under **`.geval/decisions/`** — see [Decision artifacts](/reference/decision-artifacts).
+
+## See also
+
+[explain](/cli/explain) · [validate-contract](/cli/validate-contract) · [GitHub Actions](/integration/github-actions)

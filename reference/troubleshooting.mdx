@@ -1,0 +1,46 @@
+---
+title: Troubleshooting
+description: Common Geval issues — wrong binary, wrong flags, path resolution, and validation.
+---
+
+## Wrong CLI / wrong `geval`
+
+**Symptoms:** Commands like `init`, `validate-contract`, or `demo` are missing; or `--eval` is required.
+
+**Fix:** You are not running the **[Geval release binary](https://github.com/geval-labs/geval/releases)**. Download it, use `./geval` from that directory, or fix `PATH` so the release binary wins over a namesake from npm or another tool.
+
+## `geval check` expects `--signals`, not `--eval`
+
+The open-source Geval CLI uses:
+
+```bash
+geval check --contract <path> --signals <path>
+```
+
+There is **no** `--eval` flag in this product. Your eval pipeline should produce **`signals.json`** (or whatever name you pass) and point **`--signals`** at it.
+
+## Policy paths not found
+
+Paths in **`contract.yaml`** are resolved **relative to the contract file’s directory**. Check:
+
+- Working directory when you run `geval check`
+- Typos in `policies/...` paths
+- Files not committed in CI
+
+Use **`geval validate-contract`** before **`check`** to fail fast.
+
+## Duplicate rule priorities
+
+**Symptom:** Policy load error about duplicate priorities.
+
+**Fix:** Each rule in a policy must have a **unique** `priority` value.
+
+## Numeric vs presence rules
+
+**Symptom:** A threshold rule never matches.
+
+**Fix:** Comparison operators (`>`, `<`, …) need a **numeric** `value` on the signal for that metric (and component, if used). Use **`operator: presence`** when you only care that a metric exists.
+
+## See also
+
+[Signals and rules](/concepts/signals-and-rules) · [validate-contract](/cli/validate-contract) · [Installation](/installation)

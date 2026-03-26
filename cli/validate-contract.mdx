@@ -1,0 +1,29 @@
+---
+title: geval validate-contract
+description: Validate contract YAML and load every referenced policy — fail fast before CI.
+---
+
+## Synopsis
+
+```bash
+geval validate-contract <contract.yaml> [more-contracts...] [--json]
+```
+
+## Behavior
+
+- Parses each **contract** file.
+- Resolves and loads **all policies** referenced by path.
+- Surfaces YAML and schema errors **without** requiring signals.
+
+## Examples
+
+```bash
+geval validate-contract .geval/contract.yaml
+geval validate-contract gates/a.yaml gates/b.yaml
+```
+
+Use **`--json`** for machine-readable validation output (when supported by your Geval version).
+
+## See also
+
+[check](/cli/check) · [Contract and policies](/configuration/contract-and-policies)

@@ -1,75 +1,47 @@
 ---
-title: "Geval Documentation"
-description: "Eval-driven release gates for AI applications"
+title: Geval
+description: Decision orchestration for AI changes — policy-as-code, signals in, PASS / REQUIRE_APPROVAL / BLOCK out.
 ---
 
-## What is Geval?
+Geval is a **single static binary**. You supply **signals** (evidence from your pipeline or evals) and **policies** written as YAML rules. Geval applies your rules and returns a **single reconciled outcome** for CI and humans — no hidden scoring engine, no vendor-specific eval format.
 
-Geval turns evaluation results into **automated pass/fail decisions** in CI/CD pipelines. It's a lightweight, framework-agnostic tool that enforces quality contracts on your AI applications.
-
-**Geval is:**
-- ✅ **Format-agnostic** - Works with CSV, JSON, JSONL from any eval tool
-- ✅ **Contract-based** - Define quality requirements as code
-- ✅ **CI-native** - Exit codes and JSON output for automation
-- ✅ **Framework-agnostic** - Works with Promptfoo, LangSmith, OpenEvals, or custom tools
-
-**Geval is not:**
-- ❌ An eval runner (it consumes eval outputs)
-- ❌ A monitoring tool (it's for release gates)
-- ❌ A testing framework (it validates existing results)
-
-<Card
-  title="Quick Start"
-  icon="rocket"
-  href="/getting-started"
-  horizontal
->
-  Get up and running with Geval in minutes. Install, create your first contract, and run your first check.
+<Card title="Quickstart" icon="rocket" href="/quickstart" horizontal>
+  Run the built-in demo in under a minute, then scaffold a real contract with `geval init`.
 </Card>
 
-## Key Features
+## What Geval does
+
+| You provide | Geval does |
+|-------------|------------|
+| **Signals** — JSON facts (metrics, scores, presence-only flags) | Builds a graph of evidence for rule matching |
+| **Contract** — lists policy file paths | Loads every referenced policy |
+| **Policies** — ordered rules (`when` / `then`) | Evaluates rules, picks winners by priority, merges outcomes |
+
+**Outcomes:** `PASS`, `REQUIRE_APPROVAL`, or `BLOCK` — with exit codes `0`, `1`, and `2` for automation.
+
+**What Geval is not:** an eval runner, a model, or a hosted API. It does not invent thresholds; **you** encode them in policy YAML.
+
+## Documentation map
 
 <Columns cols={2}>
-  <Card
-    title="Multi-Format Support"
-    icon="file-code"
-  >
-    Works with CSV, JSON, and JSONL files from any eval tool. No vendor lock-in.
+  <Card title="Install the binary" icon="download" href="/installation">
+    Linux, macOS, Windows — download from GitHub Releases or build from source.
   </Card>
-  <Card
-    title="CI/CD Integration"
-    icon="git-branch"
-  >
-    Exit codes and JSON output for seamless integration with any CI/CD system.
+  <Card title="Contracts & policies" icon="file-lines" href="/configuration/contract-and-policies">
+    How a contract references policies and how policies combine inside a contract.
   </Card>
-  <Card
-    title="Baseline Comparisons"
-    icon="chart-line"
-  >
-    Compare against fixed thresholds, previous runs, or main branch baselines.
+  <Card title="Signals & rules" icon="signal" href="/concepts/signals-and-rules">
+    Non-uniform signals, operators, priorities, presence rules.
   </Card>
-  <Card
-    title="Contract-Based"
-    icon="file-contract"
-  >
-    Define quality requirements as code. Version it. Review it. Commit it.
+  <Card title="CI/CD" icon="git-branch" href="/integration/github-actions">
+    GitHub Actions, GitLab CI, exit codes, artifacts.
   </Card>
 </Columns>
 
-## How It Works
+## Tools
 
-```text
-Your Evals → Geval Contract → CI Pass/Block Decision
-```
+- **[Config generator](https://config.geval.io)** — browser UI to produce `contract.yaml` and policy YAML, then validate with `geval validate-contract` and run `geval check`.
 
-1. **Define** - Write quality contracts in YAML
-2. **Integrate** - Add to your CI/CD pipeline
-3. **Enforce** - Block bad releases automatically
+## Open source
 
-<Card
-  title="View Examples"
-  icon="code"
-  href="/examples/performance"
->
-  See real-world examples for performance monitoring, safety checks, and more.
-</Card>
+Source and releases: **[github.com/geval-labs/geval](https://github.com/geval-labs/geval)**.

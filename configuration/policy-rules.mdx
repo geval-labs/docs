@@ -1,0 +1,61 @@
+---
+title: Policy rules
+description: Policy YAML structure — rules, when blocks, then actions, priorities.
+---
+
+## Top-level policy shape
+
+Policies are YAML files. A common layout:
+
+```yaml
+name: my_policy
+version: "1.0.0"
+policy:
+  environment: prod   # optional context, depending on your setup
+  rules:
+    - priority: 1
+      name: rule_name_snake_case
+      when:
+        component: retrieval    # optional
+        metric: context_relevance
+        operator: ">="
+        threshold: 0.8
+      then:
+        action: pass
+
+    - priority: 2
+      name: another_rule
+      when:
+        metric: human_reviewed
+        operator: presence
+      then:
+        action: require_approval
+        reason: "Reviewer must acknowledge"
+```
+
+## Rule fields
+
+| Field | Notes |
+|-------|--------|
+| `priority` | Integer; **unique** in this policy. **Lower = higher precedence** among matches. |
+| `name` | Stable identifier for logs and artifacts. |
+| `when` | Condition on signals: at minimum **`metric`**; **`operator`**; **`threshold`** unless `operator` is `presence`. |
+| `then.action` | `pass`, `block`, or `require_approval`. |
+| `then.reason` | Optional human-readable explanation. |
+
+## Operators
+
+- **Comparison:** `>`, `<`, `>=`, `<=`, `==` — requires a **numeric** signal value for that metric (and component if specified).
+- **`presence`** — true if a matching signal **exists**; value optional.
+
+## Priorities and “winning” rule
+
+All rules that match are considered. The **winning** rule is the one with the **smallest** `priority` value among matches. That rule’s `action` drives the policy outcome before cross-policy merge.
+
+## Validation
+
+Duplicate priorities in one policy file are rejected when the policy is loaded.
+
+## Next
+
+[Signals and rules](/concepts/signals-and-rules) · [validate-contract](/cli/validate-contract)

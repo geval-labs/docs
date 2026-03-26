@@ -1,176 +1,74 @@
 ---
-title: 'GitHub Actions'
-description: 'Integrate Geval into your GitHub Actions workflow'
+title: GitHub Actions
+description: Run the Geval binary in GitHub Actions — download release, generate signals, gate merges with exit codes.
 ---
 
-## Overview
+Geval integrates with GitHub Actions the same way as any CLI: **install binary → run `geval check` → interpret exit code**. There is **no** official npm package for the open-source Geval engine described in this documentation.
 
-GitHub Actions is the most popular CI/CD platform. Geval integrates seamlessly to enforce quality gates on pull requests.
+## Minimal pattern
 
-## Basic Setup
+1. Check out the repo.  
+2. Produce **`signals.json`** (your script, eval export, or artifact download).  
+3. Download **`geval`** from [GitHub Releases](https://github.com/geval-labs/geval/releases).  
+4. Run **`geval check`** with your **`contract.yaml`** and **`signals.json`**.  
+5. Use exit codes **`0` / `1` / `2`** for PASS / REQUIRE_APPROVAL / BLOCK.
 
-```yaml
-name: Eval Check
-
-on: [pull_request]
-
-jobs:
-  eval-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-      
-      - name: Run evals
-        run: npm run evals  # Your eval command
-      
-      - name: Install Geval
-        run: npm install -g @geval-labs/cli
-      
-      - name: Check eval results
-        run: |
-          geval check \
-            --contract contract.yaml \
-            --eval eval-results.csv
-```
-
-## Advanced Workflow
-
-### With Baseline Comparison
+## Example: released binary on `ubuntu-latest`
 
 ```yaml
-name: Eval Check
+name: Geval gate
 
 on:
   pull_request:
-    paths:
-      - 'prompts/**'
-      - 'agents/**'
+    branches: [main]
 
 jobs:
-  eval-check:
+  geval:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Install Geval
-        run: npm install -g @geval-labs/cli
-
-      - name: Run Evals
         run: |
-          # Your eval command here (promptfoo, langsmith, etc.)
-          npm run evals -- --output eval-results.json
+          curl -fsSL https://github.com/geval-labs/geval/releases/latest/download/geval-linux-x86_64 -o geval
+          chmod +x geval
 
-      - name: Validate Contract
-        run: geval validate contract.yaml
-
-      - name: Check Eval Results
+      - name: Build signals
         run: |
-          geval check \
-            --contract contract.yaml \
-            --eval eval-results.json \
-            --json > decision.json
+          # Replace with your pipeline: Python, Node, or artifact from a prior job
+          python scripts/export_signals.py > signals.json
 
-      - name: Comment on PR
-        if: always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const decision = JSON.parse(fs.readFileSync('decision.json', 'utf8'));
-            
-            const icon = decision.status === 'PASS' ? '✅' : '❌';
-            const body = `## ${icon} Geval: ${decision.status}\n\n${decision.summary}`;
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: body
-            });
+      - name: Run Geval
+        run: |
+          ./geval check \
+            --contract .geval/contract.yaml \
+            --signals signals.json \
+            --env prod
 ```
 
-## Required Status Check
+## Multiple contracts
 
-After setting up the workflow:
+Repeat **`--contract`** for each gate YAML:
 
-1. Go to your repository **Settings** → **Branches**
-2. Click **Add rule** or edit existing rule
-3. Under **Require status checks to pass before merging**:
-   - Check **Require branches to be up to date before merging**
-   - Select **eval-check** from the list
-4. Click **Save**
-
-Now PRs cannot be merged until the eval check passes!
-
-## Multiple Eval Files
-
-```yaml
-- name: Check Multiple Evals
-  run: |
-    geval check \
-      --contract contract.yaml \
-      --eval results1.json \
-      --eval results2.json \
-      --eval results3.csv
+```bash
+./geval check \
+  -c .geval/contract.yaml \
+  -c other-team/contract.yaml \
+  --signals signals.json
 ```
 
-## With Baseline from Previous Run
+Optional: **`--combine-contracts`** (default `worst_case`) controls how overall outcome merges across contracts. See [check](/cli/check).
 
-```yaml
-- name: Download Baseline
-  uses: actions/download-artifact@v3
-  with:
-    name: baseline-results
-    path: ./baseline
+## Optional: explain on PR
 
-- name: Check with Baseline
-  run: |
-    geval check \
-      --contract contract.yaml \
-      --eval current-results.json \
-      --baseline baseline/results.json
+```bash
+./geval explain -c .geval/contract.yaml --signals signals.json >> "$GITHUB_STEP_SUMMARY"
 ```
 
-## Caching Dependencies
+## Artifacts
 
-```yaml
-- name: Cache node modules
-  uses: actions/cache@v3
-  with:
-    path: ~/.npm
-    key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-    restore-keys: |
-      ${{ runner.os }}-node-
-```
+`geval check` writes decision JSON under **`.geval/decisions/`** — upload as a workflow artifact if you want historical audit in CI. See [Decision artifacts](/reference/decision-artifacts).
 
-## Matrix Strategy
+## See also
 
-Run checks across multiple Node versions:
-
-```yaml
-strategy:
-  matrix:
-    node-version: [18, 20, 22]
-steps:
-  - uses: actions/setup-node@v4
-    with:
-      node-version: ${{ matrix.node-version }}
-```
-
-## Best Practices
-
-1. **Run evals first** - Generate eval results before checking
-2. **Validate contracts** - Use `geval validate` to catch errors early
-3. **Use JSON output** - For programmatic handling in workflows
-4. **Comment on PRs** - Provide feedback directly in pull requests
-5. **Cache dependencies** - Speed up workflow runs
+[Exit codes](/integration/exit-codes) · [GitLab CI](/integration/gitlab-ci) · [Installation](/installation)

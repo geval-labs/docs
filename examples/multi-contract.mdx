@@ -1,0 +1,30 @@
+---
+title: Example — Multiple contracts on one PR
+description: Evaluate several team gates against the same signals file with geval check.
+---
+
+Large organizations often attach **more than one contract** to a pull request — for example platform security, product quality, and infra SLOs — each maintained in its own repo.
+
+## Single signals file
+
+`geval check` accepts **one** `--signals` path and **multiple** `--contract` paths:
+
+```bash
+geval check \
+  --contract platform/contract.yaml \
+  --contract product/contract.yaml \
+  --signals signals.json
+```
+
+## Combining across contracts
+
+Use **`--combine-contracts`** (default **`worst_case`**) to control how per-contract outcomes merge into the **overall** result. See [check](/cli/check).
+
+## Operational tips
+
+- Keep each contract **versioned** independently.
+- Run **`geval validate-contract`** on each contract in CI before spending time on signal generation.
+
+## See also
+
+[How Geval works](/concepts/how-geval-works) · [Decision artifacts](/reference/decision-artifacts)

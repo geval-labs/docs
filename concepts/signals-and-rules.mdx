@@ -1,0 +1,80 @@
+---
+title: Signals and rules
+description: Evidence formats, operators, priorities, presence-only matching, and rule outcomes.
+---
+
+## Signals
+
+Each **signal** is one piece of evidence. Valid JSON allows flexible shapes:
+
+- **Numeric:** `{ "metric": "accuracy", "value": 0.94 }`
+- **With context:** `{ "component": "retrieval", "metric": "context_relevance", "value": 0.85 }`
+- **Presence-only:** `{ "metric": "human_reviewed" }` — no score; existence can drive a rule with `operator: presence`.
+
+Optional top-level **`name`** and **`version`** on the signals file support audit (bump when your pipeline schema changes). See [Versioning](/configuration/versioning).
+
+## How rules use signals
+
+Rules address signals by **metric** and optionally **component** (and other `when` fields supported by your Geval version).
+
+| Operator | Meaning |
+|----------|---------|
+| `presence` | At least one signal exists for that metric (and component if specified). Ignores numeric value. |
+| `>`, `<`, `>=`, `<=`, `==` | Uses the **first numeric value** matching the metric (and component). Signals without a numeric value do not satisfy numeric comparisons. |
+
+## Priorities
+
+Within one policy, every rule **`priority`** must be **unique**. **Lower number = higher precedence** (e.g. `1` wins over `3` when both match).
+
+Geval evaluates **all** rules, keeps **all** matches, and the **winning** rule for the policy is the match with the **smallest** priority value.
+
+## Outcomes (`then`)
+
+- **`pass`** — policy contribution tends toward pass for that policy’s merge step.
+- **`block`** — severity **BLOCK**.
+- **`require_approval`** — severity **REQUIRE_APPROVAL** (human gate).
+
+Final contract and multi-contract merging uses **severity order** (see [How Geval works](/concepts/how-geval-works)).
+
+## Example (minimal)
+
+**signals.json**
+
+```json
+{
+  "name": "ci-signals",
+  "version": "1.0.0",
+  "signals": [
+    { "metric": "accuracy", "value": 0.92 },
+    { "metric": "human_reviewed" }
+  ]
+}
+```
+
+**policy.yaml** (illustrative — see [Policy rules](/configuration/policy-rules) for full schema)
+
+```yaml
+name: example-policy
+version: "1.0.0"
+policy:
+  rules:
+    - priority: 1
+      name: needs_review_if_flag_present
+      when:
+        metric: human_reviewed
+        operator: presence
+      then:
+        action: require_approval
+    - priority: 2
+      name: block_low_accuracy
+      when:
+        metric: accuracy
+        operator: "<"
+        threshold: 0.9
+      then:
+        action: block
+```
+
+## Next
+
+[Policy rules](/configuration/policy-rules) · [geval check](/cli/check)

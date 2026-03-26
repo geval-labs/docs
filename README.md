@@ -1,48 +1,40 @@
-# Geval Documentation
+# Geval documentation (Mintlify)
 
-This repository contains the documentation for [Geval](https://geval.io) - Eval-driven release gates for AI applications.
+Public documentation for **[Geval](https://geval.io)** — policy-as-code release gates for AI systems. Hosted on **Mintlify** (e.g. `docs.geval.io`).
 
-## Structure
+## What’s in this repo
 
-This documentation follows [Mintlify's](https://mintlify.com) template structure:
+| Path | Purpose |
+|------|---------|
+| **`docs.json`** | Mintlify site config — navigation, branding, footer. |
+| **`*.mdx`** | Documentation pages (MDX). |
+| **`logo/`**, **`favicon.svg`** | Brand assets. |
 
-- `docs.json` - Configuration file for Mintlify
-- `index.mdx` - Landing page
-- `getting-started.mdx` - Getting started guide
-- `cli/` - CLI command documentation
-- `contracts/` - Contract reference documentation
-- `integration/` - CI/CD integration guides
-- `api/` - API reference documentation
-- `examples/` - Example use cases
+This site documents the **open-source Geval CLI** ([`geval-labs/geval`](https://github.com/geval-labs/geval)): contracts, policies, signals, `geval check`, CI integration, and decision artifacts.
 
-## Local Development
-
-To preview the documentation locally:
+## Local preview
 
 ```bash
-# Install Mintlify CLI
-npm install -g mintlify
-
-# Start development server
-mintlify dev
+npm i -g mint
+mint dev
 ```
 
-The documentation will be available at `http://localhost:3000`
-
-## Deployment
-
-This documentation is deployed to `docs.geval.io` via Mintlify's hosting platform.
+Open the URL Mintlify prints (often `http://localhost:3000`).
 
 ## Contributing
 
-1. Make changes to `.mdx` files
-2. Update `docs.json` if adding new pages
-3. Test locally with `mintlify dev`
-4. Commit and push changes
-5. Mintlify will automatically deploy
+1. Edit `.mdx` files; keep examples aligned with the **current CLI** (`geval --help` from [Releases](https://github.com/geval-labs/geval/releases)).
+2. When adding a page, register it in **`docs.json`** under `navigation.tabs[0].groups`.
+3. Run `mint dev` and fix broken links.
+4. Open a PR; Mintlify deploys from your connected branch.
+
+## Not documented here
+
+- **REST APIs** — Geval is a **static binary**, not a hosted HTTP service. There is no OpenAPI surface for the core engine.
+- **npm `@geval-labs/cli`** — Do not document npm install for the open-source CLI unless it explicitly matches this binary; confusion with other packages has been a support issue.
 
 ## Resources
 
-- [Mintlify Documentation](https://mintlify.com/docs)
-- [Geval GitHub](https://github.com/geval-labs/geval)
-- [Geval Website](https://geval.io)
+- [Mintlify docs](https://mintlify.com/docs)
+- [Geval website](https://geval.io)
+- [Config generator](https://config.geval.io)

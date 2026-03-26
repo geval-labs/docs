@@ -1,0 +1,31 @@
+---
+title: Config generator (web UI)
+description: Generate Geval-compatible contract.yaml and policy YAML in the browser — config.geval.io
+---
+
+The **[Geval config generator](https://config.geval.io)** is a **Next.js** app that helps you build **`contract.yaml`** and policy files **without hand-writing YAML** from scratch.
+
+## What it does
+
+- **Wizard-style flow** — complete one contract / policy / rule at a time to reduce mistakes.  
+- **Validation** — highlights field errors before export.  
+- **Export** — download a ZIP or copy YAML for use with **`geval validate-contract`** and **`geval check`**.
+
+## Relationship to the CLI
+
+The web UI **generates YAML**; it does not evaluate policies. You always **`validate-contract`** and **`check`** with the **Geval binary** locally or in CI.
+
+## Workflow
+
+1. Generate YAML in the browser.  
+2. Commit files to your repo (e.g. `.geval/`).  
+3. Run:
+
+```bash
+geval validate-contract .geval/contract.yaml
+geval check --contract .geval/contract.yaml --signals signals.json
+```
+
+## See also
+
+[Quickstart](/quickstart) · [validate-contract](/cli/validate-contract)

@@ -1,202 +1,44 @@
 ---
-title: 'Exit Codes'
-description: 'Understand Geval exit codes and how CI/CD systems interpret them'
+title: Exit codes
+description: geval check and geval demo exit codes — PASS, REQUIRE_APPROVAL, BLOCK — for CI and scripts.
 ---
 
-## Overview
+## Successful evaluation (`geval check`, `geval demo`)
 
-Geval uses standard exit codes that CI/CD systems can interpret to make automated decisions. This allows seamless integration with any CI/CD platform.
+These commands exit with:
 
-## Exit Code Reference
+| Code | Outcome | Typical CI use |
+|------|---------|------------------|
+| **`0`** | **PASS** | Allow merge / deploy |
+| **`1`** | **REQUIRE_APPROVAL** | Stop for human review (or your org’s override flow) |
+| **`2`** | **BLOCK** | Fail the job; do not merge |
 
-| Code | Status | Description | CI/CD Behavior |
-|------|--------|-------------|----------------|
-| `0` | PASS | All evals passed contract requirements | ✅ Pipeline continues |
-| `1` | BLOCK | Contract violated, release blocked | ❌ Pipeline fails, merge blocked |
-| `2` | REQUIRES_APPROVAL | Approval needed to proceed | ⚠️ Pipeline fails, requires manual review |
-| `3` | ERROR | Execution error | ❌ Pipeline fails, indicates system error |
+This ordering is intentional: many systems treat **non-zero** as “needs attention,” while **`1`** vs **`2`** lets you distinguish **approval** from **hard block** if you script it.
 
-## Usage in CI/CD
+## Configuration and parse errors
 
-### GitHub Actions
+If the contract cannot be loaded, policies are missing, or signals JSON is invalid, the process exits **non-zero** with an error message on stderr — treat as **pipeline misconfiguration**, not as a policy BLOCK.
 
-GitHub Actions automatically interprets exit codes:
+Always run **`geval validate-contract`** in a separate CI step if you want fast feedback without signals.
 
-```yaml
-- name: Check eval results
-  run: geval check --contract contract.yaml --eval results.csv
-  # Exit code 0 = step passes
-  # Exit code 1+ = step fails, PR blocked
-```
-
-### GitLab CI
-
-GitLab CI uses exit codes to determine job status:
-
-```yaml
-check-evals:
-  script:
-    - geval check --contract contract.yaml --eval results.csv
-  # Exit code 0 = job passes
-  # Exit code 1+ = job fails, MR blocked
-```
-
-### Custom Handling
-
-You can handle exit codes explicitly:
+## Example shell handling
 
 ```bash
-#!/bin/bash
-geval check --contract contract.yaml --eval results.csv
-EXIT_CODE=$?
-
-case $EXIT_CODE in
-  0)
-    echo "✅ All checks passed"
-    exit 0
-    ;;
-  1)
-    echo "❌ Contract violated - blocking merge"
-    exit 1
-    ;;
-  2)
-    echo "⚠️ Approval required"
-    # Send notification, create ticket, etc.
-    exit 2
-    ;;
-  3)
-    echo "💥 Error occurred"
-    exit 3
-    ;;
+./geval check -c contract.yaml --signals signals.json
+code=$?
+case $code in
+  0) echo "PASS" ;;
+  1) echo "REQUIRE_APPROVAL" ;;
+  2) echo "BLOCK" ;;
+  *) echo "Error or unexpected exit: $code" ;;
 esac
+exit $code
 ```
 
-## Status Meanings
+## JSON output
 
-### PASS (0)
+`geval check --json` prints structured decision data to stdout; **exit codes still apply** the same way.
 
-All evaluation rules passed. Safe to merge and deploy.
+## See also
 
-```bash
-$ geval check --contract contract.yaml --eval results.csv
-✓ PASS
-
-Contract:    quality-gate
-Version:     1
-
-All 1 eval(s) passed contract requirements
-```
-
-**CI/CD Action:** Pipeline continues, merge allowed.
-
-### BLOCK (1)
-
-One or more rules failed. Do not merge or deploy.
-
-```bash
-$ geval check --contract contract.yaml --eval results.csv
-✗ BLOCK
-
-Contract:    quality-gate
-Version:     1
-
-Blocked: 2 violation(s) in 1 eval
-
-Violations
-  1. quality-metrics → accuracy
-     accuracy = 0.72, expected >= 0.85
-```
-
-**CI/CD Action:** Pipeline fails, merge blocked.
-
-### REQUIRES_APPROVAL (2)
-
-Rules failed but configured to require approval instead of blocking.
-
-```yaml
-on_violation:
-  action: require_approval
-  message: "Manual review required"
-```
-
-**CI/CD Action:** Pipeline fails, but can be overridden with approval.
-
-### ERROR (3)
-
-System error occurred (file not found, invalid contract, etc.).
-
-```bash
-$ geval check --contract missing.yaml --eval results.csv
-Error: Contract file not found: missing.yaml
-```
-
-**CI/CD Action:** Pipeline fails, indicates configuration issue.
-
-## JSON Output
-
-When using `--json` flag, exit codes still apply, but you also get structured output:
-
-```bash
-geval check --contract contract.yaml --eval results.csv --json
-```
-
-```json
-{
-  "status": "PASS",
-  "contract": {
-    "name": "quality-gate",
-    "version": 1
-  },
-  "evals": [
-    {
-      "name": "quality-metrics",
-      "status": "PASS",
-      "rules": []
-    }
-  ],
-  "violations": []
-}
-```
-
-## Best Practices
-
-1. **Always check exit codes** - Don't ignore them in scripts
-2. **Use JSON for automation** - Parse structured output for custom handling
-3. **Set appropriate actions** - Use `block` for critical, `warn` for non-critical
-4. **Handle errors gracefully** - Exit code 3 indicates configuration issues
-5. **Document expectations** - Make it clear what each exit code means in your CI/CD
-
-## Integration Examples
-
-### GitHub Actions with Custom Handling
-
-```yaml
-- name: Check evals
-  id: eval-check
-  run: |
-    geval check --contract contract.yaml --eval results.csv --json > decision.json
-    echo "status=$(jq -r '.status' decision.json)" >> $GITHUB_OUTPUT
-  continue-on-error: true
-
-- name: Comment on PR
-  if: always() && steps.eval-check.outcome != 'success'
-  uses: actions/github-script@v7
-  with:
-    script: |
-      const decision = JSON.parse(fs.readFileSync('decision.json', 'utf8'));
-      // Custom handling based on status
-```
-
-### GitLab CI with Artifacts
-
-```yaml
-check-evals:
-  script:
-    - geval check --contract contract.yaml --eval results.csv --json > decision.json
-  artifacts:
-    when: always
-    paths:
-      - decision.json
-    reports:
-      junit: decision.json
-```
+[check](/cli/check) · [GitHub Actions](/integration/github-actions)

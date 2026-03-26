@@ -1,0 +1,37 @@
+---
+title: Decision artifacts
+description: JSON artifacts written under .geval/decisions when you run geval check — audit and automation.
+---
+
+When you run **`geval check`**, Geval writes a **decision artifact** to disk (typically under **`.geval/decisions/`**) containing enough information to **audit** what was evaluated: contract hashes, policy results, signals hash, timestamps, and overall outcome.
+
+Exact field names evolve with the **`artifact_version`** — treat the file as **structured audit data**, not a public HTTP API.
+
+## What to use it for
+
+- **Compliance** — prove which contract version and policy hashes produced a merge decision.
+- **Debugging** — compare two runs side-by-side when outcomes surprise you.
+- **Downstream automation** — ingest JSON in your own tooling (with version checks).
+
+## What is inside (conceptual)
+
+A multi-contract run generally includes:
+
+- **`artifact_version`** — Schema version for the JSON file.
+- **`geval_version`** — Binary version string.
+- **`bundle_hash`** — Hash over the set of contracts participating in the run.
+- **`contracts_combine_rule`** — How multiple contracts were merged for the overall outcome.
+- **`contracts`** — Per-contract blocks: paths, names, versions, hashes, per-policy outcomes, combined decision.
+- **`overall_combined_decision`** — Final merged outcome across contracts.
+- **`signals_hash`** — Hash of the signals payload; optional **`signals_name`** / **`signals_version`** when present in the file.
+- **`timestamp`** — UTC timestamp for the write.
+
+For the exact Rust structs and version constant, see the Geval source under **`artifact/writer.rs`** in the repository.
+
+## Location
+
+Artifacts are written relative to the **current working directory** when `geval check` runs — typically **`.geval/decisions/<timestamp>.json`**.
+
+## See also
+
+[check](/cli/check) · [Versioning](/configuration/versioning)
