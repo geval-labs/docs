@@ -1,22 +1,33 @@
 ---
 title: GitHub Actions
-description: Run the Geval binary in GitHub Actions — download release, generate signals, gate merges with exit codes.
+description: Run the Geval binary in GitHub Actions — use committed or generated signals, gate PRs with exit codes, optional PR comments.
 ---
 
-Geval integrates with GitHub Actions the same way as any CLI: **install binary → run `geval check` → interpret exit code**. There is **no** official npm package for the open-source Geval engine described in this documentation.
+Geval integrates like any CLI: **`actions/checkout`** gives the job your repo files, you point **`geval check`** at a **contract** and a **signals JSON** file, then you **interpret the exit code**. There is no npm package for this engine—use the **[release binary](https://github.com/geval-labs/geval/releases)**.
 
-## Minimal pattern
+## What you must provide
 
-1. Check out the repo.  
-2. Produce **`signals.json`** (your script, eval export, or artifact download).  
-3. Download **`geval`** from [GitHub Releases](https://github.com/geval-labs/geval/releases).  
-4. Run **`geval check`** with your **`contract.yaml`** and **`signals.json`**.  
-5. Use exit codes **`0` / `1` / `2`** for PASS / REQUIRE_APPROVAL / BLOCK.
+| Input | Where it comes from |
+|-------|---------------------|
+| **Contract + policies** | Usually committed (e.g. `.geval/contract.yaml`, `.geval/policies/*.yaml`). Same files as local `geval check`. |
+| **`signals.json`** | Either **already in the repo** (commit it) **or** **created in the workflow** by a script that talks to LangSmith, Braintrust, your API, etc. |
 
-## Example: released binary on `ubuntu-latest`
+**Important:** GitHub Actions **can** read any file you commit. You do **not** have to regenerate `signals.json` in CI unless you want **fresh** metrics every run. Choose one:
+
+- **Committed signals** — Commit `.geval/signals.json` (or `signals/signals.json`). In the workflow, skip any “generate” step and run:
+  `./geval check --contract .geval/contract.yaml --signals .geval/signals.json`
+- **Generated signals** — Add a step that writes `signals.json` (e.g. `python scripts/export_from_langsmith.py > signals.json`). Your script is **your** integration; Geval only needs valid JSON matching [Signals and rules](/concepts/signals-and-rules).
+
+If you use LangSmith (or anything else), **only the script that builds JSON changes**—the `geval check` line stays the same.
+
+---
+
+## Recommended: simple PR gate (fail on BLOCK)
+
+Let the job **fail** when Geval returns **BLOCK** (`exit 2`). For **REQUIRE_APPROVAL** (`exit 1`), the job also fails unless you add custom logic (below).
 
 ```yaml
-name: Geval gate
+name: Geval quality gate
 
 on:
   pull_request:
@@ -33,22 +44,91 @@ jobs:
           curl -fsSL https://github.com/geval-labs/geval/releases/latest/download/geval-linux-x86_64 -o geval
           chmod +x geval
 
-      - name: Build signals
-        run: |
-          # Replace with your pipeline: Python, Node, or artifact from a prior job
-          python scripts/export_signals.py > signals.json
+      # Pick ONE of the next two steps:
+
+      # A) Signals already in the repo — no generation
+      # (remove this block if you use B)
+
+      # B) Generate signals in CI (LangSmith, custom API, etc.)
+      - name: Generate signals
+        run: python .github/scripts/generate_signals.py > signals.json
+        env:
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+
+      - name: Validate contract
+        run: ./geval validate-contract .geval/contract.yaml
 
       - name: Run Geval
         run: |
           ./geval check \
             --contract .geval/contract.yaml \
-            --signals signals.json \
-            --env prod
+            --signals signals.json
 ```
 
-## Multiple contracts
+If you use **committed** signals, replace the generate step with nothing and set `--signals` to the committed path, e.g. `--signals .geval/signals.json`.
 
-Repeat **`--contract`** for each gate YAML:
+**Exit codes:** `0` = PASS, `1` = REQUIRE_APPROVAL, `2` = BLOCK. See [Exit codes](/integration/exit-codes).
+
+---
+
+## Optional: REQUIRE_APPROVAL does not fail the job (custom policy)
+
+If you want **BLOCK** to fail CI but **REQUIRE_APPROVAL** to **pass** the job (so humans decide outside CI), you must **capture** the exit code in bash. GitHub’s default `bash` uses **errexit** (`-e`): if `./geval check` exits non‑zero, the script **stops** and a following `echo "exitcode=$?"` **never runs**—so do **not** rely on that pattern.
+
+**Correct pattern:**
+
+```yaml
+- name: Run Geval
+  id: geval
+  run: |
+    set +e
+    ./geval check --contract .geval/contract.yaml --signals signals.json
+    code=$?
+    set -e
+    echo "exitcode=$code" >> "$GITHUB_OUTPUT"
+    exit 0
+
+- name: Enforce decision
+  run: |
+    case "${{ steps.geval.outputs.exitcode }}" in
+      0) echo "PASS" ;;
+      1) echo "REQUIRE_APPROVAL — resolve in review process";;
+      2) echo "BLOCK — failing job"; exit 1 ;;
+      *) echo "Unexpected exit code"; exit 1 ;;
+    esac
+```
+
+Do **not** combine `continue-on-error: true` on the same step with `echo "exitcode=$?"` **without** `set +e`—the step will exit before `echo` runs.
+
+---
+
+## Optional: post `geval explain` on the PR
+
+Use the GitHub CLI (needs `pull-requests: write` and `GH_TOKEN`):
+
+```yaml
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  geval:
+    steps:
+      # ... checkout, install geval, signals, check ...
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ./geval explain --contract .geval/contract.yaml --signals signals.json > geval-report.txt
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file geval-report.txt
+```
+
+Run **`explain`** **after** you know `signals.json` exists (same paths as `check`). If you only want a comment when check fails, wrap in `if:` conditions.
+
+---
+
+## Multiple contracts
 
 ```bash
 ./geval check \
@@ -57,18 +137,16 @@ Repeat **`--contract`** for each gate YAML:
   --signals signals.json
 ```
 
-Optional: **`--combine-contracts`** (default `worst_case`) controls how overall outcome merges across contracts. See [check](/cli/check).
+Optional **`--combine-contracts`** (default `worst_case`): [check](/cli/check).
 
-## Optional: explain on PR
-
-```bash
-./geval explain -c .geval/contract.yaml --signals signals.json >> "$GITHUB_STEP_SUMMARY"
-```
+---
 
 ## Artifacts
 
-`geval check` writes decision JSON under **`.geval/decisions/`** — upload as a workflow artifact if you want historical audit in CI. See [Decision artifacts](/reference/decision-artifacts).
+`geval check` writes decision JSON under **`.geval/decisions/`**. Upload that folder as a workflow artifact if you want audit history in CI. See [Decision artifacts](/reference/decision-artifacts).
+
+---
 
 ## See also
 
-[Exit codes](/integration/exit-codes) · [GitLab CI](/integration/gitlab-ci) · [Installation](/installation)
+[Exit codes](/integration/exit-codes) · [GitLab CI](/integration/gitlab-ci) · [Installation](/installation) · [Troubleshooting — CI](/reference/troubleshooting#github-actions-exit-code-not-captured)

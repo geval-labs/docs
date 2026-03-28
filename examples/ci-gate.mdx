@@ -1,33 +1,53 @@
 ---
 title: Example — CI merge gate
-description: End-to-end pattern — build signals, validate contracts, run check, branch on exit code.
+description: Validate contracts, run geval check, and choose committed vs generated signals.
 ---
 
-## Pipeline shape
+## What runs in CI
 
-1. **Checkout** your repository (and any shared contract repos).  
-2. **Generate `signals.json`** from tests, eval exports, or monitoring snapshots.  
-3. **`geval validate-contract`** on each contract YAML you care about.  
-4. **`geval check`** with one or more `--contract` flags.  
-5. **Gate on exit code** — `0` merge OK; `1`/`2` per your policy.
+1. **Checkout** — Your committed `.geval/` (contract + policies) is on the runner.  
+2. **Signals** — Either use a **committed** `signals.json` or **generate** one in a step (LangSmith, other tools, or `cp` from a known path).  
+3. **`geval validate-contract`** — Fast validation without signals.  
+4. **`geval check`** — One or more `--contract` paths, one `--signals` path.  
+5. **Policy** — Fail the job on exit `2` (BLOCK); optionally treat exit `1` (REQUIRE_APPROVAL) differently—see [GitHub Actions](/integration/github-actions).
 
-## Sketch (pseudo-YAML)
+## Committed signals (no generator)
+
+```yaml
+- uses: actions/checkout@v4
+- name: Install Geval
+  run: curl -fsSL https://github.com/geval-labs/geval/releases/latest/download/geval-linux-x86_64 -o geval && chmod +x geval
+- name: Check
+  run: ./geval check --contract .geval/contract.yaml --signals .geval/signals.json
+```
+
+## Generated signals (e.g. LangSmith)
+
+```yaml
+- name: Generate signals
+  run: python .github/scripts/generate_signals.py > signals.json
+- name: Check
+  run: ./geval check --contract .geval/contract.yaml --signals signals.json
+```
+
+Only the **generator** is vendor-specific; Geval’s CLI is the same.
+
+## Sketch with validate
 
 ```yaml
 steps:
-  - name: Export signals
-    run: python scripts/build_signals.py > signals.json
-
-  - name: Validate contracts
-    run: geval validate-contract .geval/contract.yaml
-
-  - name: Geval check
-    run: geval check --contract .geval/contract.yaml --signals signals.json
+  - uses: actions/checkout@v4
+  - name: Install Geval
+    run: curl -fsSL https://github.com/geval-labs/geval/releases/latest/download/geval-linux-x86_64 -o geval && chmod +x geval
+  - name: Validate contract
+    run: ./geval validate-contract .geval/contract.yaml
+  - name: Run check
+    run: ./geval check --contract .geval/contract.yaml --signals .geval/signals.json
 ```
 
 ## Artifact upload
 
-Upload **`.geval/decisions/*.json`** as a CI artifact for audit. See [Decision artifacts](/reference/decision-artifacts).
+Upload **`.geval/decisions/*.json`** for audit. See [Decision artifacts](/reference/decision-artifacts).
 
 ## See also
 

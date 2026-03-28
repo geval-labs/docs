@@ -41,6 +41,16 @@ Use **`geval validate-contract`** before **`check`** to fail fast.
 
 **Fix:** Comparison operators (`>`, `<`, …) need a **numeric** `value` on the signal for that metric (and component, if used). Use **`operator: presence`** when you only care that a metric exists.
 
+## GitHub Actions: exit code not captured
+
+**Symptom:** `steps.<id>.outputs.exitcode` is empty, or enforcement logic is wrong after `geval check` fails.
+
+**Cause:** The default shell uses **errexit**. When `./geval check` exits `1` or `2`, the script **stops** before `echo "exitcode=$?" >> $GITHUB_OUTPUT` runs.
+
+**Fix:** Use `set +e`, run check, save `code=$?`, then `set -e` and write `$code` to `GITHUB_OUTPUT`. See **Optional: REQUIRE_APPROVAL does not fail the job** in [GitHub Actions](/integration/github-actions).
+
+**Related:** You do **not** have to generate `signals.json` in CI—committed files work after `checkout`. Confusion often comes from mixing “LangSmith export in CI” with “GitHub can’t see the repo.”
+
 ## See also
 
 [Signals and rules](/concepts/signals-and-rules) · [validate-contract](/cli/validate-contract) · [Installation](/installation)
