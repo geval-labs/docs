@@ -51,6 +51,12 @@ Use **`geval validate-contract`** before **`check`** to fail fast.
 
 **Related:** You do **not** have to generate `signals.json` in CI—committed files work after `checkout`. Confusion often comes from mixing “LangSmith export in CI” with “GitHub can’t see the repo.”
 
+## REQUIRE_APPROVAL in CI
+
+**Symptom:** You want PRs to stay “green” when Geval returns **REQUIRE_APPROVAL** (`exit 1`) but red on **BLOCK** (`exit 2`).
+
+**Fix:** You must capture the exit code with **`set +e`** and branch in a later step or job. Patterns for labels, `needs:` jobs, and **`geval approve`** are documented under **Handling REQUIRE_APPROVAL: extra logic** on [GitHub Actions](/integration/github-actions).
+
 ## See also
 
 [Signals and rules](/concepts/signals-and-rules) · [validate-contract](/cli/validate-contract) · [Installation](/installation)

@@ -102,6 +102,143 @@ Do **not** combine `continue-on-error: true` on the same step with `echo "exitco
 
 ---
 
+## Handling REQUIRE_APPROVAL: extra logic
+
+Exit code **`1`** means Geval’s merged outcome is **REQUIRE_APPROVAL** (a human or process should review before you treat the change as fully cleared). GitHub does not have a built-in “REQUIRE_APPROVAL” status—**you** choose what happens: fail the check, pass the check but label the PR, notify Slack, gate an Environment, or record an approval file with **`geval approve`**.
+
+| Exit | Meaning | Typical automation |
+|------|---------|-------------------|
+| `0` | PASS | No extra action; merge allowed per your rules |
+| `1` | REQUIRE_APPROVAL | Comment, label, notify, or require GitHub Environment reviewers |
+| `2` | BLOCK | Fail the job; do not merge until policies pass |
+
+### 1) Single job: fail only on BLOCK, label PR on REQUIRE_APPROVAL
+
+Run check with **`set +e`**, map the code to a **`decision` output**, fail the step only when **`2`**. A second step adds a label only when `decision == require_approval`.
+
+```yaml
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  geval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Geval
+        run: |
+          curl -fsSL https://github.com/geval-labs/geval/releases/latest/download/geval-linux-x86_64 -o geval
+          chmod +x geval
+
+      - name: Generate signals
+        run: python .github/scripts/generate_signals.py > signals.json
+
+      - name: Run Geval and classify
+        id: geval
+        run: |
+          set +e
+          ./geval check --contract .geval/contract.yaml --signals signals.json
+          code=$?
+          set -e
+          echo "exitcode=$code" >> "$GITHUB_OUTPUT"
+          case "$code" in
+            0) echo "decision=pass" >> "$GITHUB_OUTPUT" ;;
+            1) echo "decision=require_approval" >> "$GITHUB_OUTPUT" ;;
+            2) echo "decision=block" >> "$GITHUB_OUTPUT" ;;
+            *) echo "decision=error" >> "$GITHUB_OUTPUT" ;;
+          esac
+          if [ "$code" -eq 2 ]; then
+            echo "BLOCK — failing job"
+            exit 1
+          fi
+          if [ "$code" -ne 0 ] && [ "$code" -ne 1 ]; then
+            echo "Unexpected exit $code"
+            exit 1
+          fi
+          exit 0
+
+      - name: Explain for comment
+        if: github.event_name == 'pull_request' && steps.geval.outputs.decision != 'pass'
+        run: |
+          ./geval explain --contract .geval/contract.yaml --signals signals.json > geval-report.txt
+
+      - name: Label PR — needs Geval review
+        if: github.event_name == 'pull_request' && steps.geval.outputs.decision == 'require_approval'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr edit "${{ github.event.pull_request.number }}" --add-label "geval:needs-approval"
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file geval-report.txt
+```
+
+Create the label **`geval:needs-approval`** once in the repo (or use `gh label create`). You can require that label to be removed before merge via a separate process, or use branch rules that require another check.
+
+### 2) Follow-up job using `needs` (Slack, email, etc.)
+
+Expose a **job output** so a second job runs **only** when the decision is `require_approval`.
+
+```yaml
+jobs:
+  geval:
+    runs-on: ubuntu-latest
+    outputs:
+      decision: ${{ steps.geval.outputs.decision }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Geval
+        run: |
+          curl -fsSL https://github.com/geval-labs/geval/releases/latest/download/geval-linux-x86_64 -o geval
+          chmod +x geval
+      - name: Signals + check
+        id: geval
+        run: |
+          python .github/scripts/generate_signals.py > signals.json
+          set +e
+          ./geval check --contract .geval/contract.yaml --signals signals.json
+          code=$?
+          set -e
+          case "$code" in
+            0) echo "decision=pass" >> "$GITHUB_OUTPUT" ;;
+            1) echo "decision=require_approval" >> "$GITHUB_OUTPUT" ;;
+            2) echo "decision=block" >> "$GITHUB_OUTPUT" ;;
+            *) echo "decision=error" >> "$GITHUB_OUTPUT"; exit 1 ;;
+          esac
+          if [ "$code" -eq 2 ]; then exit 1; fi
+          exit 0
+
+  notify-approval:
+    needs: geval
+    if: needs.geval.outputs.decision == 'require_approval'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify reviewers
+        run: echo "Add Slack/Teams/PagerDuty step here — PR needs human approval per Geval policy"
+```
+
+Replace the echo step with **`slackapi/slack-github-action`**, email, or your internal webhook.
+
+### 3) GitHub Environments (manual approvers)
+
+For **deployment** pipelines, attach a job to an **Environment** that has **Required reviewers** in repository settings. That job can run **after** Geval reports `require_approval`, or you can treat Geval BLOCK as “do not deploy” and use Environment approval only for production deploys—not a substitute for encoding Geval’s `REQUIRE_APPROVAL` in YAML, but a common combo.
+
+### 4) Recording approval with `geval approve`
+
+After a human agrees, someone can run locally or in a trusted workflow:
+
+```bash
+geval approve --reason "Reviewed metrics and policy exceptions" --output .geval/approval.json
+```
+
+Commit **`approval.json`** or upload it as an **artifact** if your org’s policy expects an audit trail. **`geval reject`** writes a parallel record. See [approve & reject](/cli/approve-reject). Wiring “merge only if approval file exists” is **your** policy layer (branch rules, required check, or a second workflow).
+
+### 5) Failing CI on REQUIRE_APPROVAL (strictest)
+
+If **`1` and `2` should both fail** the PR check, run **`geval check` with no special handling**—the default shell will exit non‑zero for both. No extra logic needed.
+
+---
+
 ## Optional: post `geval explain` on the PR
 
 Use the GitHub CLI (needs `pull-requests: write` and `GH_TOKEN`):
@@ -149,4 +286,4 @@ Optional **`--combine-contracts`** (default `worst_case`): [check](/cli/check).
 
 ## See also
 
-[Exit codes](/integration/exit-codes) · [GitLab CI](/integration/gitlab-ci) · [Installation](/installation) · [Troubleshooting — CI](/reference/troubleshooting#github-actions-exit-code-not-captured)
+[Exit codes](/integration/exit-codes) · [approve & reject](/cli/approve-reject) · [GitLab CI](/integration/gitlab-ci) · [Installation](/installation) · [Troubleshooting](/reference/troubleshooting)
